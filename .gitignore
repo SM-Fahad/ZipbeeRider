@@ -1,0 +1,83 @@
+# -------------------------------------------------------------------------
+# Flutter / Dart Specific Files
+# -------------------------------------------------------------------------
+# This ignores the main build outputs of your Flutter app
+build/
+/build/
+# Ignore the local tool configuration files and cache
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+
+# If you use architecture blueprints like bricks or generated code templates
+# .mason-cache/
+
+# -------------------------------------------------------------------------
+# Android Specific Files
+# -------------------------------------------------------------------------
+# Android local configuration (e.g., SDK paths)
+android/local.properties
+android/key.properties
+android/GeneratedPluginRegistrant.java
+
+# Gradle files and cache
+android/.gradle/
+android/app/build/
+
+# Keystore files (Never commit these to git!)
+*.keystore
+*.jks
+
+# -------------------------------------------------------------------------
+# iOS Specific Files
+# -------------------------------------------------------------------------
+# CocoaPods and build outputs
+ios/.symlinks/
+ios/Pods/
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+ios/Flutter/Flutter.podspec
+ios/DerivedData/
+
+# User-specific Xcode configurations
+*.mode1v3
+*.mode2v3
+*.storyboardc
+*.xccheckout
+*.xcuserstate
+xcuserdata/
+
+# -------------------------------------------------------------------------
+# IDEs and Text Editors
+# -------------------------------------------------------------------------
+# JetBrains IDEs (Android Studio / IntelliJ IDEA)
+.idea/
+*.iml
+*.iws
+
+# Visual Studio Code
+.vscode/
+
+# macOS configuration file
+.DS_Store
+
+# -------------------------------------------------------------------------
+# Environment Variables & Secrets
+# -------------------------------------------------------------------------
+# If you are using flutter_dotenv or similar for api keys
+.env
+!.env.example
+
+
+# Explicitly ignore all APK and App Bundle outputs everywhere
+*.apk
+*.ap_
+*.aab
+
+# Specific paths for generated outputs
+**/build/outputs/
+**/build/app/outputs/
+android/app/build/outputs/

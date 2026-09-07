@@ -1,0 +1,111 @@
+name: ZipBee_Driver
+description: "A new Flutter project."
+publish_to: "none" # Remove this line if you wish to publish to pub.dev
+
+
+version: 1.0.0+20
+# Update Date: 18 August
+environment:
+  sdk: ^3.9.2
+
+dependencies: 
+  flutter:
+    sdk: flutter
+
+  flutter_dotenv: ^5.2.1
+  path: ^1.9.0
+
+  cupertino_icons: ^1.0.8
+  get: ^4.7.2
+  flutter_screenutil: ^5.9.3
+  google_fonts: ^6.3.2
+  flutter_easyloading: ^3.0.5
+  slide_to_act: ^2.0.2
+  dotted_border: ^2.1.0
+  image_picker: ^1.1.2
+  file_picker: ^8.0.0
+  qr_flutter: ^4.1.0
+  http: ^1.6.0
+  logger: ^2.6.2
+  shared_preferences: ^2.5.3
+  modal_bottom_sheet: 3.0.0-pre
+  country_code_picker: 3.0.0
+  get_storage: ^2.1.1
+  intl: ^0.19.0
+  geolocator: ^10.1.0
+  google_maps_flutter: ^2.14.0
+  google_maps_flutter_android: ^2.18.6
+  google_maps_flutter_platform_interface: ^2.10.0
+  google_maps_flutter_web: ^0.5.0
+  location: ^8.0.1
+  flutter_polyline_points: ^3.1.0
+  jwt_decoder: ^2.0.1
+  flutter_launcher_icons: ^0.13.1
+  socket_io_client: ^2.0.1
+  url_launcher: ^6.2.6
+  flutter_local_notifications: ^17.0.0
+  flutter_stripe: ^12.2.0
+  fl_chart: ^1.1.1
+  firebase_storage: ^13.4.3
+  firebase_core: ^4.11.0
+  firebase_messaging: ^16.4.1
+  google_navigation_flutter: ^0.10.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^5.0.0
+
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icons/app_icon_rider.png"
+  min_sdk_android: 21
+
+# For information on the generic Dart part of this file, see the
+# following page: https://dart.dev/tools/pub/pubspec
+
+# The following section is specific to Flutter packages.
+flutter:
+  config:
+    enable-swift-package-manager: false
+
+  # The following line ensures that the Material Icons font is
+  # included with your application, so that you can use the icons in
+  # the material Icons class.
+  uses-material-design: true
+
+  # To add assets to your application, add an assets section, like this:
+  assets:
+    - .env
+    - assets/images/
+    - assets/icons/
+    - assets/icons/delivery_icons/
+
+  # An image asset can refer to one or more resolution-specific "variants", see
+  # https://flutter.dev/to/resolution-aware-images
+
+  # For details regarding adding assets from package dependencies, see
+  # https://flutter.dev/to/asset-from-package
+
+  # To add custom fonts to your application, add a fonts section here,
+  # in this "flutter" section. Each entry in this list should have a
+  # "family" key with the font family name, and a "fonts" key with a
+  # list giving the asset and other descriptors for the font. For
+  # example:
+  # fonts:
+  #   - family: Schyler
+  #     fonts:
+  #       - asset: fonts/Schyler-Regular.ttf
+  #       - asset: fonts/Schyler-Italic.ttf
+  #         style: italic
+  #   - family: Trajan Pro
+  #     fonts:
+  #       - asset: fonts/TrajanPro.ttf
+  #       - asset: fonts/TrajanPro_Bold.ttf
+  #         weight: 700
+  #
+  # For details regarding fonts from package dependencies,
+  # see https://flutter.dev/to/font-from-package
