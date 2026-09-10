@@ -11,6 +11,7 @@ class WalletHistoryController extends GetxController {
   int currentPage = 1;
   bool isLoading = false;
   bool hasMore = true;
+  String selectedFilter = 'ALL'; // 'ALL', 'TIP'
 
   @override
   void onInit() {
@@ -31,12 +32,22 @@ class WalletHistoryController extends GetxController {
     super.onClose();
   }
 
+  void setFilter(String filter) {
+    if (selectedFilter == filter) return;
+    selectedFilter = filter;
+    currentPage = 1;
+    transactions.clear();
+    hasMore = true;
+    update();
+    loadMoreData();
+  }
+
   Future<void> loadMoreData() async {
     if (isLoading || !hasMore) return;
 
     isLoading = true;
     update();
-    debugPrint('📥 WalletHistoryController: Loading page $currentPage...');
+    debugPrint('📥 WalletHistoryController: Loading page $currentPage, filter: $selectedFilter...');
 
     try {
       // Show loading indicator on first page
@@ -44,7 +55,10 @@ class WalletHistoryController extends GetxController {
         EasyLoading.show(status: 'Loading transaction history...');
       }
 
-      final result = await _service.fetchHistory(currentPage);
+      final result = await _service.fetchHistory(
+        currentPage,
+        type: selectedFilter == 'ALL' ? null : selectedFilter,
+      );
       final List<WalletHistory> newData = List<WalletHistory>.from(result['transactions'] ?? []);
       final bool serverHasMore = result['hasMore'] as bool? ?? false;
 
@@ -67,5 +81,12 @@ class WalletHistoryController extends GetxController {
       EasyLoading.dismiss();
       update();
     }
+  }
+
+  Future<void> refreshData() async {
+    currentPage = 1;
+    transactions.clear();
+    hasMore = true;
+    await loadMoreData();
   }
 }

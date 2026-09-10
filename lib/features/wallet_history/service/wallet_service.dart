@@ -7,7 +7,7 @@ import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:http/http.dart' as http;
 
 class WalletService {
-  Future<Map<String, dynamic>> fetchHistory(int page) async {
+  Future<Map<String, dynamic>> fetchHistory(int page, {String? type}) async {
     try {
       // Get userId from SharedPreferences
       var userId = await SharedPreferencesHelper.getUserId();
@@ -44,7 +44,7 @@ class WalletService {
         throw Exception('User ID not found. Please login again.');
       }
 
-      debugPrint('📡 Wallet Service: Fetching history for userId=$userId, page=$page');
+      debugPrint('📡 Wallet Service: Fetching history for userId=$userId, page=$page, type=$type');
 
       // Get token for authentication
       final token = await SharedPreferencesHelper.getAccessToken();
@@ -52,9 +52,12 @@ class WalletService {
         throw Exception('No authentication token found');
       }
 
-      // Build URL using ApiEndPoint
+      // Build URL using ApiEndPoint with optional type filter
       final baseUrl = ApiEndPoint.getWalletHistory(userId);
-      final url = '$baseUrl?page=$page&limit=20';
+      final typeQuery = (type != null && type.isNotEmpty && type != 'ALL')
+          ? '&type=$type'
+          : '';
+      final url = '$baseUrl?page=$page&limit=20$typeQuery';
       debugPrint('📍 Wallet Service URL: $url');
 
       final response = await http.get(
