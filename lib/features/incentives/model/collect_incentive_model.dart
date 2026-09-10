@@ -50,14 +50,14 @@ class WalletHistoryModel {
 
   factory WalletHistoryModel.fromJson(Map<String, dynamic> json) {
     return WalletHistoryModel(
-      id: json['id'] as int,
-      transactionId: json['transactionId'] as String,
-      transactionType: json['transactionType'] as String,
-      userId: json['userId'] as int,
-      type: json['type'] as String,
-      amount: json['amount'] as String,
-      status: json['status'] as String,
-      createdAt: DateTime.parse(json['createdAt'] as String),
+      id: json['id'] is int ? json['id'] as int : (int.tryParse(json['id']?.toString() ?? '0') ?? 0),
+      transactionId: json['transactionId']?.toString() ?? json['id']?.toString() ?? '',
+      transactionType: json['transactionType']?.toString() ?? '',
+      userId: json['userId'] is int ? json['userId'] as int : (int.tryParse(json['userId']?.toString() ?? '0') ?? 0),
+      type: json['type']?.toString() ?? '',
+      amount: json['amount']?.toString() ?? '0.00',
+      status: json['status']?.toString() ?? '',
+      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt'].toString()) : DateTime.now(),
     );
   }
 }
