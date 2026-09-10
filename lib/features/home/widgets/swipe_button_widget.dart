@@ -168,6 +168,9 @@ class SwipeButtonWidget extends StatelessWidget {
     final effectiveAcceptText = _getAcceptLabel();
     final effectiveBackgroundColor = _getBackgroundColor();
     final effectiveIconPath = _getVehicleIconPath();
+    final effectiveTextColor = effectiveBackgroundColor.computeLuminance() < 0.45
+        ? Colors.white
+        : Colors.black;
 
     return GetBuilder<SwipeButtonController>(
       tag: uniqueTag,
@@ -192,7 +195,7 @@ class SwipeButtonWidget extends StatelessWidget {
                       child: Text(
                         'Left To Decline',
                         style: getTextStyle(
-                          color: Colors.black,
+                          color: effectiveTextColor,
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                         ),
@@ -206,7 +209,7 @@ class SwipeButtonWidget extends StatelessWidget {
                       child: Text(
                         effectiveAcceptText,
                         style: getTextStyle(
-                          color: Colors.black,
+                          color: effectiveTextColor,
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                         ),

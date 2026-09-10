@@ -22,6 +22,7 @@ import '../service/home_feed_socket_service.dart';
 import '../service/deliverytype_service.dart';
 import 'package:ZipBee_Driver/features/account/controller/account_controller.dart';
 import 'package:ZipBee_Driver/core/utils/constants/appcolors.dart';
+import 'package:ZipBee_Driver/core/utils/order_color_helper.dart';
 
 class HomeController extends GetxController with WidgetsBindingObserver, RouteAware {
   // ================= STATE =================
@@ -64,6 +65,19 @@ class HomeController extends GetxController with WidgetsBindingObserver, RouteAw
   Timer? _progressTimer;
 
   final unreadNotificationCount = 0.obs;
+
+  // New Order Spotlight & Decline Tracking
+  final Map<int, DateTime> _spotlightOrders = {};
+  final Set<int> _knownOrderIds = {};
+  final Set<int> _declinedOrderIds = {};
+  Timer? _spotlightRefreshTimer;
+
+  int get feedRefreshRateSeconds {
+    if (Get.isRegistered<AccountController>()) {
+      return Get.find<AccountController>().orderFeedRefreshRateSeconds.value;
+    }
+    return 10;
+  }
 
   // ================= LIFECYCLE =================
   bool _isRouteObserverSubscribed = false;
@@ -150,6 +164,7 @@ class HomeController extends GetxController with WidgetsBindingObserver, RouteAw
     scrollController.dispose();
     _stopSendingLocation();
     _stopProgressTimer();
+    _spotlightRefreshTimer?.cancel();
     _feedSocketService.dispose();
     _socketService.disconnect();
     super.onClose();
@@ -303,6 +318,9 @@ class HomeController extends GetxController with WidgetsBindingObserver, RouteAw
 
   void clearOrdersState() {
     orders.clear();
+    _spotlightOrders.clear();
+    _knownOrderIds.clear();
+    _spotlightRefreshTimer?.cancel();
     currentPage.value = 1;
     totalPages.value = 1;
     hasMoreData.value = true;
@@ -339,6 +357,9 @@ class HomeController extends GetxController with WidgetsBindingObserver, RouteAw
             decoded['message'] ?? '0 declined order(s) restored successfully';
 
         if (isSuccess) {
+          _declinedOrderIds.clear();
+          _knownOrderIds.clear();
+          _spotlightOrders.clear();
           EasyLoading.showSuccess(message);
           await refreshOrders();
         } else {
@@ -514,7 +535,110 @@ class HomeController extends GetxController with WidgetsBindingObserver, RouteAw
     if (success) {
       Get.back();
       EasyLoading.showSuccess('Feed refresh rate updated successfully');
+      _scheduleSpotlightAutoRefresh();
+      if (orders.isNotEmpty) {
+        orders.assignAll(sortOrdersList(orders));
+        orders.refresh();
+      }
     }
+  }
+
+  // ================= MULTI-LEVEL SORTING & SPOTLIGHT HELPERS =================
+  List<OrderModel> sortOrdersList(List<OrderModel> list) {
+    final now = DateTime.now();
+    final sorted = List<OrderModel>.from(list);
+
+    sorted.sort((a, b) {
+      final aExpires = _spotlightOrders[a.id];
+      final bExpires = _spotlightOrders[b.id];
+      final aIsSpotlight = aExpires != null && aExpires.isAfter(now);
+      final bIsSpotlight = bExpires != null && bExpires.isAfter(now);
+
+      // New Order Exception: temporary spotlight pops to the very top
+      if (aIsSpotlight && !bIsSpotlight) return -1;
+      if (!aIsSpotlight && bIsSpotlight) return 1;
+      if (aIsSpotlight && bIsSpotlight) {
+        final cmp = bExpires!.compareTo(aExpires!);
+        if (cmp != 0) return cmp;
+      }
+
+      // Sort Level 1: Primary Section Color / Category Rank
+      // 1st: Current (Yellow) -> 2nd: Later (Blue) -> 3rd: Scheduled (Grey)
+      final rankA = OrderColorHelper.getOrderCategoryRank(a, currentTime: now);
+      final rankB = OrderColorHelper.getOrderCategoryRank(b, currentTime: now);
+      if (rankA != rankB) {
+        return rankA.compareTo(rankB);
+      }
+
+      // Sort Level 2: Collection Urgency (Time)
+      // Soonest collection time climbs to the top of its color section
+      final timeA = (a.scheduledTime ?? a.placedAt ?? a.createdAt).toLocal();
+      final timeB = (b.scheduledTime ?? b.placedAt ?? b.createdAt).toLocal();
+      final timeDiff = timeA.compareTo(timeB);
+      if (timeDiff != 0) {
+        return timeDiff;
+      }
+
+      // Sort Level 3: Proximity (Distance)
+      // If collection times match, job closest to driver's GPS location ranks higher
+      final distA = _getDistanceToDriver(a);
+      final distB = _getDistanceToDriver(b);
+      return distA.compareTo(distB);
+    });
+
+    return sorted;
+  }
+
+  double _getDistanceToDriver(OrderModel order) {
+    if (order.raiderToPickupKm != null) {
+      return order.raiderToPickupKm!;
+    }
+
+    if (currentLocation.value != null && order.orderStops.isNotEmpty) {
+      try {
+        final pickup = order.orderStops.firstWhere(
+          (s) => s.isPickup,
+          orElse: () => order.orderStops.first,
+        );
+        final distanceInMeters = Geolocator.distanceBetween(
+          currentLocation.value!.latitude,
+          currentLocation.value!.longitude,
+          pickup.latitude,
+          pickup.longitude,
+        );
+        return distanceInMeters / 1000.0;
+      } catch (_) {}
+    }
+
+    return order.effectiveDistanceKm;
+  }
+
+  void _scheduleSpotlightAutoRefresh() {
+    _spotlightRefreshTimer?.cancel();
+    final now = DateTime.now();
+
+    // Clean up expired spotlights
+    _spotlightOrders.removeWhere((id, expires) => expires.isBefore(now));
+
+    if (_spotlightOrders.isEmpty) return;
+
+    DateTime earliest = _spotlightOrders.values.first;
+    for (final expires in _spotlightOrders.values) {
+      if (expires.isBefore(earliest)) earliest = expires;
+    }
+
+    final remainingMs = earliest.difference(now).inMilliseconds;
+    final delay = remainingMs > 0 ? remainingMs + 50 : 100;
+
+    _spotlightRefreshTimer = Timer(Duration(milliseconds: delay), () {
+      final currentNow = DateTime.now();
+      _spotlightOrders.removeWhere((id, expires) => expires.isBefore(currentNow));
+      if (orders.isNotEmpty) {
+        orders.assignAll(sortOrdersList(orders));
+        orders.refresh();
+      }
+      _scheduleSpotlightAutoRefresh();
+    });
   }
 
   // ================= HELPERS =================
@@ -875,15 +999,18 @@ class HomeController extends GetxController with WidgetsBindingObserver, RouteAw
     try {
       logger.i('Declining order via API: Order #${order.id}');
 
+      // Immediately track declined order and remove from list and spotlight
+      _declinedOrderIds.add(order.id);
+      _spotlightOrders.remove(order.id);
+      orders.removeWhere((o) => o.id == order.id);
+      orders.refresh();
+
       // Call the API to decline the order
       final response = await orderFeedService.declineOrder(order.id);
 
       if (response['success'] == true) {
         logger.i('Order declined successfully: Order #${order.id}');
         logger.i('Response: $response');
-
-        // Remove the order from the list
-        orders.removeAt(index);
 
         declineDialogStep.value = 2; // Show success dialog
       } else {
@@ -1116,15 +1243,33 @@ class HomeController extends GetxController with WidgetsBindingObserver, RouteAw
           isLoading.value = false;
           isLoadingMore.value = false;
           
+          // Filter out locally declined orders
+          final filteredOrders = parsedOrders
+              .where((order) => !_declinedOrderIds.contains(order.id))
+              .toList();
+
+          final now = DateTime.now();
+          final rateSeconds = feedRefreshRateSeconds;
+
+          // Detect new orders that weren't known before and spotlight them
+          for (final order in filteredOrders) {
+            if (!_knownOrderIds.contains(order.id)) {
+              _knownOrderIds.add(order.id);
+              _spotlightOrders[order.id] = now.add(Duration(seconds: rateSeconds));
+            }
+          }
+
           if (currentPage.value == 1) {
-            orders.assignAll(parsedOrders);
+            orders.assignAll(sortOrdersList(filteredOrders));
           } else {
             // Append unique orders to avoid duplicates
             final Set<int> existingIds = orders.map((o) => o.id).toSet();
-            final List<OrderModel> newOrders = parsedOrders.where((o) => !existingIds.contains(o.id)).toList();
-            orders.addAll(newOrders);
+            final List<OrderModel> newOrders = filteredOrders.where((o) => !existingIds.contains(o.id)).toList();
+            final combined = [...orders, ...newOrders];
+            orders.assignAll(sortOrdersList(combined));
           }
           orders.refresh();
+          _scheduleSpotlightAutoRefresh();
           
           totalPages.value = (total / limit.value).ceil();
           if (totalPages.value == 0) totalPages.value = 1;
@@ -1166,6 +1311,8 @@ class HomeController extends GetxController with WidgetsBindingObserver, RouteAw
         },
         onOrderDeclined: (int orderId, String message) {
           logger.i('[SOCKET FEED] Order declined: removing orderId $orderId');
+          _declinedOrderIds.add(orderId);
+          _spotlightOrders.remove(orderId);
           orders.removeWhere((order) => order.id == orderId);
           orders.refresh();
           EasyLoading.showInfo(message);
