@@ -139,7 +139,15 @@ class DriverPreferenceController extends GetxController {
     if (success) {
       isModified.value = false;
       EasyLoading.showSuccess('Feed refresh rate updated successfully');
+      if (_homeController.orders.isNotEmpty) {
+        _homeController.orders.assignAll(_homeController.sortOrdersList(_homeController.orders));
+        _homeController.orders.refresh();
+      }
     }
+  }
+
+  Future<void> resetOrderFeed() async {
+    await _homeController.resetOrderFeed();
   }
 
   void onMapCreated(GoogleMapController controller) {
