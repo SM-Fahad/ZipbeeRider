@@ -1418,7 +1418,7 @@ class HomeController extends GetxController with WidgetsBindingObserver, RouteAw
   /// Start sending location continuously
   void _startSendingLocation() {
     _locationTimer?.cancel();
-    _locationTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+    _locationTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       if (currentLocation.value != null && isOnline.value) {
         _socketService.sendLocation(
           lat: currentLocation.value!.latitude,
