@@ -259,7 +259,7 @@ class RiderCardWidget extends StatelessWidget {
                       children: [
                         Text(
                           displayExtraFee > 0
-                              ? '\$${displayExtraFee.toStringAsFixed(2)} + \$${displayBasePay.toStringAsFixed(2)}'
+                              ? '\$${displayBasePay.toStringAsFixed(2)} + \$${displayExtraFee.toStringAsFixed(2)}'
                               : '\$${displayBasePay.toStringAsFixed(2)}',
                           style: getTextStyle(
                             fontSize: 14,
