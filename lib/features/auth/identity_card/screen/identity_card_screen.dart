@@ -147,6 +147,7 @@ class IdentityCardScreen extends StatelessWidget {
                 ctrl: ctrl,
                 title: "Click to upload",
                 fileRef: ctrl.frontIdCard,
+                existingUrl: ctrl.existingFrontIdUrl,
               ),
               SizedBox(height: 30),
 
@@ -159,6 +160,7 @@ class IdentityCardScreen extends StatelessWidget {
                 ctrl: ctrl,
                 title: "Click to upload",
                 fileRef: ctrl.backIdCard,
+                existingUrl: ctrl.existingBackIdUrl,
               ),
               SizedBox(height: 40),
 
@@ -192,6 +194,7 @@ class IdentityCardScreen extends StatelessWidget {
                 ctrl: ctrl,
                 title: "Click to upload",
                 fileRef: ctrl.frontLicenseCard,
+                existingUrl: ctrl.existingFrontLicenseUrl,
               ),
               SizedBox(height: 30),
 
@@ -201,6 +204,7 @@ class IdentityCardScreen extends StatelessWidget {
                 ctrl: ctrl,
                 title: "Click to upload",
                 fileRef: ctrl.backLicenseCard,
+                existingUrl: ctrl.existingBackLicenseUrl,
               ),
               SizedBox(height: 40),
 

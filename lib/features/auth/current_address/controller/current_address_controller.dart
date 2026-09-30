@@ -36,6 +36,58 @@ class CurrentAddressController extends GetxController {
   final accountNumberController = TextEditingController();
   final bank = ''.obs;
   final isCountryPickerOpen = false.obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    _checkAndPrefill();
+  }
+
+  void _checkAndPrefill() {
+    if (Get.isRegistered<RegistrationController>(tag: 'registration')) {
+      final regCtrl = Get.find<RegistrationController>(tag: 'registration');
+      if (regCtrl.currentAddress.value.isNotEmpty) {
+        currentAddressController.text = regCtrl.currentAddress.value;
+      }
+      if (regCtrl.currentApartment.value.isNotEmpty) {
+        currentApartmentController.text = regCtrl.currentApartment.value;
+      }
+      if (regCtrl.currentStateProvince.value.isNotEmpty) {
+        currentState.value = regCtrl.currentStateProvince.value;
+      }
+      if (regCtrl.currentZipPostCode.value.isNotEmpty) {
+        currentZipController.text = regCtrl.currentZipPostCode.value;
+      }
+      if (regCtrl.currentCountry.value.isNotEmpty) {
+        currentCountry.value = regCtrl.currentCountry.value;
+      }
+
+      if (regCtrl.permanentAddress.value.isNotEmpty) {
+        permanentAddressController.text = regCtrl.permanentAddress.value;
+      }
+      if (regCtrl.permanentApartment.value.isNotEmpty) {
+        permanentApartmentController.text = regCtrl.permanentApartment.value;
+      }
+      if (regCtrl.permanentStateProvince.value.isNotEmpty) {
+        permanentState.value = regCtrl.permanentStateProvince.value;
+      }
+      if (regCtrl.permanentZipPostCode.value.isNotEmpty) {
+        permanentZipController.text = regCtrl.permanentZipPostCode.value;
+      }
+      if (regCtrl.permanentCountry.value.isNotEmpty) {
+        permanentCountry.value = regCtrl.permanentCountry.value;
+      }
+
+      if (regCtrl.bankName.value.isNotEmpty) {
+        bankNameController.text = regCtrl.bankName.value;
+        bank.value = regCtrl.bankName.value;
+      }
+      if (regCtrl.accountNumber.value.isNotEmpty) {
+        accountNumberController.text = regCtrl.accountNumber.value;
+      }
+    }
+  }
+
   final availableCountries = const [
     CountryOption(name: 'Afghanistan', code: 'AF'),
     CountryOption(name: 'Albania', code: 'AL'),
@@ -285,7 +337,9 @@ class CurrentAddressController extends GetxController {
   }
 
   Future<void> submitAddressAndBankDetails() async {
-    final regCtrl = Get.put(RegistrationController(), tag: 'registration');
+    final regCtrl = Get.isRegistered<RegistrationController>(tag: 'registration')
+        ? Get.find<RegistrationController>(tag: 'registration')
+        : Get.put(RegistrationController(), tag: 'registration');
 
     // Current Address
     regCtrl.currentAddress.value = currentAddressController.text;

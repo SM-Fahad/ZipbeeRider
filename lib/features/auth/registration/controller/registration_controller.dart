@@ -74,6 +74,20 @@ class RegistrationController extends GetxController {
 
   var isLoading = false.obs;
 
+  // ================= EXISTING PREFILLED URLS (FOR RESUBMISSION) =================
+  var existingDriverPhotos = <String>[].obs;
+  var existingNidFront = ''.obs;
+  var existingNidBack = ''.obs;
+  var existingDlFront = ''.obs;
+  var existingDlBack = ''.obs;
+  var existingVehicleFront = ''.obs;
+  var existingVehicleBack = ''.obs;
+  var existingVehicleDriverSide = ''.obs;
+  var existingVehiclePassengerSide = ''.obs;
+  var existingVehicleLog = ''.obs;
+  var existingVehiclePolicy = ''.obs;
+  var isResubmission = false.obs;
+
   // ================= HELPERS =================
   String formatDate(DateTime date) => date.toIso8601String() + 'Z';
 
@@ -96,6 +110,181 @@ class RegistrationController extends GetxController {
       default:
         return value.trim();
     }
+  }
+
+  String unmapLicenseClass(String value) {
+    switch (value.trim().toUpperCase()) {
+      case 'CLASS_2B':
+        return 'Class 2B';
+      case 'CLASS_2A':
+        return 'Class 2A';
+      case 'CLASS_2':
+        return 'Class 2';
+      case 'CLASS_3':
+        return 'Class 3';
+      case 'CLASS_3A':
+        return 'Class 3A';
+      case 'CLASS_4':
+        return 'Class 4';
+      case 'CLASS_5':
+        return 'Class 5';
+      default:
+        return value.trim();
+    }
+  }
+
+  String _extractFirstUrl(dynamic value) {
+    if (value == null) return '';
+    if (value is List && value.isNotEmpty) {
+      return value.first?.toString() ?? '';
+    }
+    if (value is String) {
+      return value;
+    }
+    return '';
+  }
+
+  void prefillFromRegistration(Map<String, dynamic> reg) {
+    isResubmission.value = true;
+    raiderName.value = reg['raider_name']?.toString() ?? '';
+    contactNumber.value = reg['contact_number']?.toString() ?? '';
+    email.value = reg['email_address']?.toString() ?? '';
+    dob.value = reg['dob']?.toString() ?? '';
+    gender.value = reg['gender']?.toString() ?? '';
+    emergencyContactName.value =
+        reg['emergency_contact_name']?.toString() ?? '';
+    emergencyContactNumber.value =
+        reg['emergency_contact_number']?.toString() ?? '';
+
+    identityCardNumber.value = reg['identity_card_number']?.toString() ?? '';
+    identityCardIssueDate.value =
+        reg['identity_card_issue_date']?.toString() ?? '';
+    drivingLicenseNumber.value =
+        reg['driving_license_number']?.toString() ?? '';
+    drivingLicenseIssueDate.value =
+        reg['driving_license_issue_date']?.toString() ?? '';
+    licenseClass.value = reg['license_class']?.toString() ?? '';
+
+    vehiclePlateNumber.value = reg['vehicle_plate_number']?.toString() ?? '';
+    vehicleType.value = reg['vehicle_type_id']?.toString() ?? '';
+    vehicleBrand.value = reg['vehicle_brand']?.toString() ?? '';
+    vehicleModel.value = reg['vehicle_model']?.toString() ?? '';
+    registrationDate.value = reg['registration_date']?.toString() ?? '';
+
+    chassisNumber.value = reg['chassis_number']?.toString() ?? '';
+    vehiclePolicyNumber.value =
+        reg['insurance_policy_number']?.toString() ?? '';
+    vehiclePolicyIssueDate.value =
+        reg['insurance_issue_date']?.toString() ?? '';
+    vehiclePolicyExpireDate.value =
+        reg['insurance_expiry_date']?.toString() ?? '';
+
+    currentZipPostCode.value = reg['current_postal_code']?.toString() ?? '';
+    currentAddress.value = reg['current_address']?.toString() ?? '';
+    currentApartment.value = reg['current_unit']?.toString() ?? '';
+    currentCountry.value = reg['current_country']?.toString() ?? 'Singapore';
+
+    permanentZipPostCode.value =
+        reg['permanent_postal_code']?.toString() ?? '';
+    permanentAddress.value = reg['permanent_address']?.toString() ?? '';
+    permanentApartment.value = reg['permanent_unit']?.toString() ?? '';
+    permanentCountry.value =
+        reg['permanent_country']?.toString() ?? 'Singapore';
+
+    bankName.value = reg['bank_name']?.toString() ?? '';
+    accountNumber.value = reg['account_number']?.toString() ?? '';
+
+    // Extract existing photo URLs
+    final photos = reg['driver_photos'];
+    if (photos is List) {
+      existingDriverPhotos.assignAll(
+        photos.map((e) => e.toString()).where((e) => e.isNotEmpty).toList(),
+      );
+    } else if (photos is String && photos.isNotEmpty) {
+      existingDriverPhotos.assignAll([photos]);
+    }
+
+    existingNidFront.value = _extractFirstUrl(reg['nric_front_images']);
+    existingNidBack.value = _extractFirstUrl(reg['nric_back_images']);
+    existingDlFront.value =
+        _extractFirstUrl(reg['driving_license_front_images']);
+    existingDlBack.value =
+        _extractFirstUrl(reg['driving_license_back_images']);
+    existingVehicleFront.value = _extractFirstUrl(reg['vehicle_front_images']);
+    existingVehicleBack.value = _extractFirstUrl(reg['vehicle_back_images']);
+    existingVehicleDriverSide.value =
+        _extractFirstUrl(reg['vehicle_driver_side_images']);
+    existingVehiclePassengerSide.value =
+        _extractFirstUrl(reg['vehicle_passenger_side_images']);
+    existingVehicleLog.value = _extractFirstUrl(reg['vehicle_log_images']);
+    existingVehiclePolicy.value =
+        _extractFirstUrl(reg['insurance_policy_images']);
+  }
+
+  void resetForm() {
+    isResubmission.value = false;
+    raiderName.value = '';
+    contactNumber.value = '';
+    email.value = '';
+    dob.value = '';
+    gender.value = '';
+    driverPhotos.clear();
+    emergencyContactName.value = '';
+    emergencyContactNumber.value = '';
+
+    identityCardNumber.value = '';
+    identityCardIssueDate.value = '';
+    nidFront.value = null;
+    nidBack.value = null;
+    drivingLicenseNumber.value = '';
+    drivingLicenseIssueDate.value = '';
+    licenseClass.value = '';
+    dlFront.value = null;
+    dlBack.value = null;
+
+    vehiclePlateNumber.value = '';
+    vehicleType.value = '';
+    vehicleBrand.value = '';
+    vehicleModel.value = '';
+    registrationDate.value = '';
+    vehicleFront.value = null;
+    vehicleBack.value = null;
+    vehicleDriverSide.value = null;
+    vehiclePassengerSide.value = null;
+
+    chassisNumber.value = '';
+    vehicleLogFile = null;
+    vehiclePolicyNumber.value = '';
+    vehiclePolicyIssueDate.value = '';
+    vehiclePolicyExpireDate.value = '';
+    vehiclePolicyFile = null;
+
+    currentAddress.value = '';
+    currentApartment.value = '';
+    currentStateProvince.value = '';
+    currentCountry.value = 'Singapore';
+    currentZipPostCode.value = '';
+
+    permanentAddress.value = '';
+    permanentApartment.value = '';
+    permanentStateProvince.value = '';
+    permanentCountry.value = 'Singapore';
+    permanentZipPostCode.value = '';
+
+    bankName.value = '';
+    accountNumber.value = '';
+
+    existingDriverPhotos.clear();
+    existingNidFront.value = '';
+    existingNidBack.value = '';
+    existingDlFront.value = '';
+    existingDlBack.value = '';
+    existingVehicleFront.value = '';
+    existingVehicleBack.value = '';
+    existingVehicleDriverSide.value = '';
+    existingVehiclePassengerSide.value = '';
+    existingVehicleLog.value = '';
+    existingVehiclePolicy.value = '';
   }
 
   void putIfNotEmpty(Map<String, dynamic> payload, String key, dynamic value) {
@@ -200,36 +389,47 @@ class RegistrationController extends GetxController {
 
       isLoading.value = true;
 
-      final driverPhotoUrls = await uploadFiles(driverPhotos);
+      final uploadedDriverPhotos = await uploadFiles(driverPhotos);
+      final List<String> driverPhotoUrls = uploadedDriverPhotos.isNotEmpty
+          ? uploadedDriverPhotos
+          : List<String>.from(existingDriverPhotos);
+
       final nidFrontUrls = nidFront.value != null
           ? await uploadFiles([nidFront.value!])
-          : [];
+          : (existingNidFront.value.isNotEmpty ? [existingNidFront.value] : <String>[]);
       final nidBackUrls = nidBack.value != null
           ? await uploadFiles([nidBack.value!])
-          : [];
+          : (existingNidBack.value.isNotEmpty ? [existingNidBack.value] : <String>[]);
       final dlFrontUrls = dlFront.value != null
           ? await uploadFiles([dlFront.value!])
-          : [];
+          : (existingDlFront.value.isNotEmpty ? [existingDlFront.value] : <String>[]);
       final dlBackUrls = dlBack.value != null
           ? await uploadFiles([dlBack.value!])
-          : [];
+          : (existingDlBack.value.isNotEmpty ? [existingDlBack.value] : <String>[]);
 
       final vehicleFrontUrls = vehicleFront.value != null
           ? await uploadFiles([vehicleFront.value!])
-          : [];
+          : (existingVehicleFront.value.isNotEmpty ? [existingVehicleFront.value] : <String>[]);
       final vehicleBackUrls = vehicleBack.value != null
           ? await uploadFiles([vehicleBack.value!])
-          : [];
+          : (existingVehicleBack.value.isNotEmpty ? [existingVehicleBack.value] : <String>[]);
 
       final vehicleDriverUrls = vehicleDriverSide.value != null
           ? await uploadFiles([vehicleDriverSide.value!])
-          : [];
+          : (existingVehicleDriverSide.value.isNotEmpty ? [existingVehicleDriverSide.value] : <String>[]);
       final vehiclePassengerUrls = vehiclePassengerSide.value != null
           ? await uploadFiles([vehiclePassengerSide.value!])
-          : [];
+          : (existingVehiclePassengerSide.value.isNotEmpty ? [existingVehiclePassengerSide.value] : <String>[]);
 
-      final vehicleLogUrl = await uploadPlatformFile(vehicleLogFile);
-      final insurancePolicyUrl = await uploadPlatformFile(vehiclePolicyFile);
+      final uploadedVehicleLogUrl = await uploadPlatformFile(vehicleLogFile);
+      final vehicleLogUrl = (uploadedVehicleLogUrl != null && uploadedVehicleLogUrl.isNotEmpty)
+          ? uploadedVehicleLogUrl
+          : (existingVehicleLog.value.isNotEmpty ? existingVehicleLog.value : null);
+
+      final uploadedInsurancePolicyUrl = await uploadPlatformFile(vehiclePolicyFile);
+      final insurancePolicyUrl = (uploadedInsurancePolicyUrl != null && uploadedInsurancePolicyUrl.isNotEmpty)
+          ? uploadedInsurancePolicyUrl
+          : (existingVehiclePolicy.value.isNotEmpty ? existingVehiclePolicy.value : null);
       final Map<String, dynamic> payload = {};
 
       putIfNotEmpty(payload, 'raider_name', raiderName.value);

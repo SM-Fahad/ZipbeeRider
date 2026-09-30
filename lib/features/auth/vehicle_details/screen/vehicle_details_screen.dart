@@ -196,6 +196,7 @@ class VehicleDetailsScreen extends StatelessWidget {
               label: "Front View of Vehicle*",
               title: "Click to upload",
               fileRef: ctrl.frontImage,
+              existingUrl: ctrl.existingFrontImageUrl,
             ),
             SizedBox(height: 40),
             LabeledUploadBox(
@@ -203,6 +204,7 @@ class VehicleDetailsScreen extends StatelessWidget {
               label: "Rear View of Vehicle*",
               title: "Click to upload",
               fileRef: ctrl.backImage,
+              existingUrl: ctrl.existingBackImageUrl,
             ),
             SizedBox(height: 40),
             LabeledUploadBox(
@@ -210,6 +212,7 @@ class VehicleDetailsScreen extends StatelessWidget {
               label: "Driver Side View*",
               title: "Click to upload",
               fileRef: ctrl.driverImage,
+              existingUrl: ctrl.existingDriverImageUrl,
             ),
             SizedBox(height: 40),
             LabeledUploadBox(
@@ -217,6 +220,7 @@ class VehicleDetailsScreen extends StatelessWidget {
               label: "Passenger Side View*",
               title: "Click to upload",
               fileRef: ctrl.passengerImage,
+              existingUrl: ctrl.existingPassengerImageUrl,
             ),
 
             SizedBox(height: 40),

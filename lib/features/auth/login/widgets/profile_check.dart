@@ -55,37 +55,144 @@ class ProfileCheck extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: const Color(0xFFE8E8E8)),
+                  border: Border.all(
+                    color: controller.isRejected.value
+                        ? const Color(0xFFFFCDD2)
+                        : const Color(0xFFE8E8E8),
+                    width: controller.isRejected.value ? 1.5 : 1.0,
+                  ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Status',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.subtitleFontColor,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Status',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.subtitleFontColor,
+                          ),
+                        ),
+                        if (controller.isRejected.value)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFEBEE),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Row(
+                              children: [
+                                Icon(
+                                  Icons.cancel,
+                                  size: 14,
+                                  color: Color(0xFFD32F2F),
+                                ),
+                                SizedBox(width: 4),
+                                Text(
+                                  'REJECTED',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                    color: Color(0xFFD32F2F),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        else if (controller.statusTitle.value.contains('Waiting'))
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFF7D6),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Row(
+                              children: [
+                                Icon(
+                                  Icons.access_time_rounded,
+                                  size: 14,
+                                  color: Color(0xFF8D6E63),
+                                ),
+                                SizedBox(width: 4),
+                                Text(
+                                  'PENDING REVIEW',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                    color: Color(0xFF8D6E63),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 10),
                     Text(
                       controller.statusTitle.value,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.primaryFontColor,
+                        color: controller.isRejected.value
+                            ? const Color(0xFFD32F2F)
+                            : AppColors.primaryFontColor,
                       ),
                     ),
                     const SizedBox(height: 10),
-                    Text(
-                      controller.statusMessage.value,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        height: 1.5,
-                        color: AppColors.fontColor,
+                    if (controller.isRejected.value &&
+                        controller.rejectionReason.value.isNotEmpty) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF8F8),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFFFFEBEE)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Reason:',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFFD32F2F),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              controller.rejectionReason.value,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                height: 1.4,
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xFF2D3748),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 12),
+                    ] else ...[
+                      Text(
+                        controller.statusMessage.value,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          height: 1.5,
+                          color: AppColors.fontColor,
+                        ),
+                      ),
+                    ],
                     if (controller.showPrimaryButton) ...[
                       const SizedBox(height: 18),
                       SizedBox(

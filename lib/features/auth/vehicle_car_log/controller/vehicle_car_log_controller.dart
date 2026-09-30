@@ -17,15 +17,58 @@ class VehicleCarLogController extends GetxController {
   final vehicleLogFile = Rxn<PlatformFile>();
   final vehiclePolicyFile = Rxn<PlatformFile>();
 
+  final existingVehicleLogUrl = ''.obs;
+  final existingVehiclePolicyUrl = ''.obs;
+
   bool get canContinue =>
       chassisNumberController.text.trim().isNotEmpty &&
-      vehicleLogFile.value != null;
+      (vehicleLogFile.value != null || existingVehicleLogUrl.value.isNotEmpty);
 
   @override
   void onClose() {
     chassisNumberController.dispose();
     policyNumberController.dispose();
     super.onClose();
+  }
+
+  @override
+  void onInit() {
+    super.onInit();
+    _checkAndPrefill();
+  }
+
+  void _checkAndPrefill() {
+    if (Get.isRegistered<RegistrationController>(tag: 'registration')) {
+      final regCtrl = Get.find<RegistrationController>(tag: 'registration');
+      if (regCtrl.chassisNumber.value.isNotEmpty) {
+        chassisNumberController.text = regCtrl.chassisNumber.value;
+      }
+      if (regCtrl.vehiclePolicyNumber.value.isNotEmpty) {
+        policyNumberController.text = regCtrl.vehiclePolicyNumber.value;
+      }
+      if (regCtrl.vehiclePolicyIssueDate.value.isNotEmpty) {
+        try {
+          policyIssueDate.value =
+              DateTime.parse(regCtrl.vehiclePolicyIssueDate.value);
+        } catch (_) {}
+      }
+      if (regCtrl.vehiclePolicyExpireDate.value.isNotEmpty) {
+        try {
+          policyExpiryDate.value =
+              DateTime.parse(regCtrl.vehiclePolicyExpireDate.value);
+        } catch (_) {}
+      }
+      if (regCtrl.vehicleLogFile != null) {
+        vehicleLogFile.value = regCtrl.vehicleLogFile;
+      } else if (regCtrl.existingVehicleLog.value.isNotEmpty) {
+        existingVehicleLogUrl.value = regCtrl.existingVehicleLog.value;
+      }
+      if (regCtrl.vehiclePolicyFile != null) {
+        vehiclePolicyFile.value = regCtrl.vehiclePolicyFile;
+      } else if (regCtrl.existingVehiclePolicy.value.isNotEmpty) {
+        existingVehiclePolicyUrl.value = regCtrl.existingVehiclePolicy.value;
+      }
+    }
   }
 
   String formatDate(DateTime? date) {
@@ -63,7 +106,7 @@ class VehicleCarLogController extends GetxController {
       EasyLoading.showError('Please enter chassis number');
       return;
     }
-    if (vehicleLogFile.value == null) {
+    if (vehicleLogFile.value == null && existingVehicleLogUrl.value.isEmpty) {
       EasyLoading.showError('Please upload vehicle log card');
       return;
     }
@@ -79,7 +122,8 @@ class VehicleCarLogController extends GetxController {
       EasyLoading.showError('Please select insurance policy expiry date');
       return;
     }
-    if (vehiclePolicyFile.value == null) {
+    if (vehiclePolicyFile.value == null &&
+        existingVehiclePolicyUrl.value.isEmpty) {
       EasyLoading.showError('Please upload insurance policy document');
       return;
     }
@@ -89,10 +133,16 @@ class VehicleCarLogController extends GetxController {
       return;
     }
 
-    final regCtrl = Get.put(RegistrationController(), tag: 'registration');
+    final regCtrl = Get.isRegistered<RegistrationController>(tag: 'registration')
+        ? Get.find<RegistrationController>(tag: 'registration')
+        : Get.put(RegistrationController(), tag: 'registration');
 
     regCtrl.chassisNumber.value = chassisNumberController.text.trim();
-    regCtrl.vehicleLogFile = vehicleLogFile.value;
+    if (vehicleLogFile.value != null) {
+      regCtrl.vehicleLogFile = vehicleLogFile.value;
+    } else if (existingVehicleLogUrl.value.isNotEmpty) {
+      regCtrl.existingVehicleLog.value = existingVehicleLogUrl.value;
+    }
 
     // policy
     regCtrl.vehiclePolicyNumber.value = policyNumberController.text.trim();
@@ -105,9 +155,13 @@ class VehicleCarLogController extends GetxController {
           policyExpiryDate.value!.toIso8601String() + 'Z';
     }
 
-    regCtrl.vehiclePolicyFile = vehiclePolicyFile.value;
+    if (vehiclePolicyFile.value != null) {
+      regCtrl.vehiclePolicyFile = vehiclePolicyFile.value;
+    } else if (existingVehiclePolicyUrl.value.isNotEmpty) {
+      regCtrl.existingVehiclePolicy.value = existingVehiclePolicyUrl.value;
+    }
 
-    Get.to(CurrentAddressScreen());
+    Get.to(() => CurrentAddressScreen());
   }
 
   Future<void> pickVehicleLogFile() async {

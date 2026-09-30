@@ -7,10 +7,16 @@ import 'package:ZipBee_Driver/core/services/socket_service.dart';
 import 'package:ZipBee_Driver/features/home/controller/home_controller.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
+import 'package:ZipBee_Driver/features/auth/registration/controller/registration_controller.dart';
+import 'package:ZipBee_Driver/features/auth/rider_details/controller/rider_details_controller.dart';
+import 'package:ZipBee_Driver/features/auth/identity_card/controller/identity_card_controller.dart';
+import 'package:ZipBee_Driver/features/auth/vehicle_details/controller/vehicle_details_controller.dart';
+import 'package:ZipBee_Driver/features/auth/vehicle_car_log/controller/vehicle_car_log_controller.dart';
+import 'package:ZipBee_Driver/features/auth/current_address/controller/current_address_controller.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 
-enum ProfileCheckAction { none, registration, quiz, payment }
+enum ProfileCheckAction { none, registration, resubmitRegistration, quiz, payment }
 
 class ProfileCheckController extends GetxController {
   ProfileCheckController({this.autoCheckOnInit = true});
@@ -27,6 +33,11 @@ class ProfileCheckController extends GetxController {
   final primaryButtonText = ''.obs;
   final activeAction = ProfileCheckAction.none.obs;
   final rank = 'BRONZE'.obs;
+
+  final isRejected = false.obs;
+  final rejectionReason = ''.obs;
+  final rejectedAt = ''.obs;
+  final registrationData = <String, dynamic>{}.obs;
 
   @override
   void onInit() {
@@ -163,7 +174,7 @@ class ProfileCheckController extends GetxController {
           action: ProfileCheckAction.registration,
           actionText: 'Complete Registration',
         );
-        _showProfileCheckScreenIfNeeded();
+        _showProfileCheckScreenIfNeeded(navigate: navigateOnSuccess);
         return;
       }
 
@@ -173,12 +184,41 @@ class ProfileCheckController extends GetxController {
               .toUpperCase() ??
           '';
 
+      if (verificationStatus == 'REJECTED') {
+        isRejected.value = true;
+        rejectionReason.value =
+            raiderProfile['rejectionReason']?.toString() ?? '';
+        rejectedAt.value = raiderProfile['rejectedAt']?.toString() ?? '';
+
+        if (registrations.isNotEmpty && registrations.first is Map) {
+          registrationData.value =
+              Map<String, dynamic>.from(registrations.first);
+        } else {
+          registrationData.clear();
+        }
+
+        _setStatus(
+          title: 'Application Rejected',
+          message: rejectionReason.value.isNotEmpty
+              ? rejectionReason.value
+              : 'Admin has rejected your registration. Please review and resubmit your details.',
+          action: ProfileCheckAction.resubmitRegistration,
+          actionText: 'Edit & Resubmit Details',
+        );
+        _showProfileCheckScreenIfNeeded(navigate: navigateOnSuccess);
+        return;
+      }
+
+      isRejected.value = false;
+      rejectionReason.value = '';
+      rejectedAt.value = '';
+
       if (verificationStatus != 'APPROVED') {
         _setStatus(
           title: 'Waiting For Admin Approval',
           message: 'Admin has not approved your registration yet. Please wait.',
         );
-        _showProfileCheckScreenIfNeeded();
+        _showProfileCheckScreenIfNeeded(navigate: navigateOnSuccess);
         return;
       }
 
@@ -189,7 +229,7 @@ class ProfileCheckController extends GetxController {
           action: ProfileCheckAction.quiz,
           actionText: 'Participate In Quiz',
         );
-        _showProfileCheckScreenIfNeeded();
+        _showProfileCheckScreenIfNeeded(navigate: navigateOnSuccess);
         return;
       }
 
@@ -206,7 +246,7 @@ class ProfileCheckController extends GetxController {
           action: ProfileCheckAction.quiz,
           actionText: 'Try Again',
         );
-        _showProfileCheckScreenIfNeeded();
+        _showProfileCheckScreenIfNeeded(navigate: navigateOnSuccess);
         return;
       }
 
@@ -219,7 +259,7 @@ class ProfileCheckController extends GetxController {
           action: ProfileCheckAction.payment,
           actionText: 'Pay Now',
         );
-        _showProfileCheckScreenIfNeeded();
+        _showProfileCheckScreenIfNeeded(navigate: navigateOnSuccess);
         return;
       }
 
@@ -244,6 +284,9 @@ class ProfileCheckController extends GetxController {
       case ProfileCheckAction.registration:
         await Get.toNamed(AppRoutes.riderDetailsScreen);
         break;
+      case ProfileCheckAction.resubmitRegistration:
+        await startResubmission();
+        break;
       case ProfileCheckAction.quiz:
         await Get.toNamed(AppRoutes.appQuizScreen);
         break;
@@ -253,6 +296,34 @@ class ProfileCheckController extends GetxController {
       case ProfileCheckAction.none:
         break;
     }
+  }
+
+  Future<void> startResubmission() async {
+    final regCtrl = Get.isRegistered<RegistrationController>(tag: 'registration')
+        ? Get.find<RegistrationController>(tag: 'registration')
+        : Get.put(RegistrationController(), tag: 'registration');
+
+    if (registrationData.isNotEmpty) {
+      regCtrl.prefillFromRegistration(registrationData);
+    }
+
+    if (Get.isRegistered<RiderDetailsController>()) {
+      Get.delete<RiderDetailsController>();
+    }
+    if (Get.isRegistered<IdentityCardController>()) {
+      Get.delete<IdentityCardController>();
+    }
+    if (Get.isRegistered<VehicleDetailsController>()) {
+      Get.delete<VehicleDetailsController>();
+    }
+    if (Get.isRegistered<VehicleCarLogController>()) {
+      Get.delete<VehicleCarLogController>();
+    }
+    if (Get.isRegistered<CurrentAddressController>()) {
+      Get.delete<CurrentAddressController>();
+    }
+
+    await Get.toNamed(AppRoutes.riderDetailsScreen);
   }
 
   Future<void> recheckProfile() async {
@@ -390,7 +461,14 @@ class ProfileCheckController extends GetxController {
     Get.offAllNamed(AppRoutes.loginSignupScreen);
   }
 
-  void _showProfileCheckScreenIfNeeded() {
+  void _showProfileCheckScreenIfNeeded({bool navigate = true}) {
+    if (!navigate) return;
+    if (isRejected.value) {
+      if (Get.currentRoute != AppRoutes.applicationRejectedScreen) {
+        Get.offAllNamed(AppRoutes.applicationRejectedScreen);
+      }
+      return;
+    }
     if (Get.currentRoute != AppRoutes.profileCheckScreen) {
       Get.offAllNamed(AppRoutes.profileCheckScreen);
     }
