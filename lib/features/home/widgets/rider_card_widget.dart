@@ -368,10 +368,9 @@ class RiderCardWidget extends StatelessWidget {
                       Row(
                         children: [
                           Image.asset(
-                            IconPath.location_red,
-                            // isRoundTrip
-                            //     ? IconPath.location_blue
-                            //     : IconPath.location_red,
+                            isRoundTrip
+                                ? IconPath.location_blue
+                                : IconPath.location_red,
                             width: 18,
                             height: 18,
                           ),
