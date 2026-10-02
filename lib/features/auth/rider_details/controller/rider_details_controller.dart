@@ -20,6 +20,7 @@ class RiderDetailsController extends GetxController {
   final selectedCountryCode = '+65'.obs;
   final emergencySelectedCountryCode = '+65'.obs;
   var driverPhoto = Rx<File?>(null);
+  var existingDriverPhotoUrl = ''.obs;
 
   final ImagePicker picker = ImagePicker();
 
@@ -37,13 +38,79 @@ class RiderDetailsController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    // setEmail();
+    _checkAndPrefill();
   }
 
-  // void setEmail() async {
-  //   final email = await SharedPreferencesHelper.getEmail();
-  //   emailController.text = email ?? '';
-  // }
+  void _checkAndPrefill() {
+    if (Get.isRegistered<RegistrationController>(tag: 'registration')) {
+      final regCtrl = Get.find<RegistrationController>(tag: 'registration');
+      if (regCtrl.raiderName.value.isNotEmpty) {
+        driverNameController.text = regCtrl.raiderName.value;
+      }
+      if (regCtrl.contactNumber.value.isNotEmpty) {
+        final phone = regCtrl.contactNumber.value;
+        if (phone.startsWith('+65')) {
+          selectedCountryCode.value = '+65';
+          contactNumberController.text = phone.substring(3);
+        } else {
+          contactNumberController.text = phone;
+        }
+      }
+      if (regCtrl.email.value.isNotEmpty) {
+        emailController.text = regCtrl.email.value;
+      }
+      if (regCtrl.dob.value.isNotEmpty) {
+        dobController.text = _formatIsoToDisplay(regCtrl.dob.value);
+      }
+      if (regCtrl.gender.value.isNotEmpty) {
+        final g = regCtrl.gender.value.trim().toUpperCase();
+        if (g == 'MALE') {
+          selectedGender.value = 'Male';
+        } else if (g == 'FEMALE') {
+          selectedGender.value = 'Female';
+        } else {
+          selectedGender.value = 'Other';
+        }
+      }
+      if (regCtrl.emergencyContactName.value.isNotEmpty) {
+        emergencyContactNameController.text =
+            regCtrl.emergencyContactName.value;
+      }
+      if (regCtrl.emergencyContactNumber.value.isNotEmpty) {
+        final ePhone = regCtrl.emergencyContactNumber.value;
+        if (ePhone.startsWith('+65')) {
+          emergencySelectedCountryCode.value = '+65';
+          emergencyContactNumberController.text = ePhone.substring(3);
+        } else {
+          emergencyContactNumberController.text = ePhone;
+        }
+      }
+      if (regCtrl.driverPhotos.isNotEmpty) {
+        driverPhoto.value = regCtrl.driverPhotos.first;
+      } else if (regCtrl.existingDriverPhotos.isNotEmpty) {
+        existingDriverPhotoUrl.value = regCtrl.existingDriverPhotos.first;
+      }
+    }
+  }
+
+  String _formatIsoToDisplay(String raw) {
+    if (raw.trim().isEmpty) return '';
+    try {
+      final date = DateTime.parse(raw.trim());
+      return "${date.day}/${date.month}/${date.year}";
+    } catch (_) {
+      try {
+        if (raw.contains('T')) {
+          final part = raw.split('T')[0];
+          final parts = part.split('-');
+          if (parts.length == 3) {
+            return "${int.parse(parts[2])}/${int.parse(parts[1])}/${parts[0]}";
+          }
+        }
+      } catch (_) {}
+      return raw;
+    }
+  }
 
   Future<void> pickDriverPhoto() async {
     final XFile? pickedFile = await picker.pickImage(
@@ -87,7 +154,7 @@ class RiderDetailsController extends GetxController {
       EasyLoading.showError('Please select gender');
       return;
     }
-    if (driverPhoto.value == null) {
+    if (driverPhoto.value == null && existingDriverPhotoUrl.value.isEmpty) {
       EasyLoading.showError('Please upload profile photo');
       return;
     }
@@ -100,7 +167,9 @@ class RiderDetailsController extends GetxController {
       return;
     }
 
-    final regCtrl = Get.put(RegistrationController(), tag: 'registration');
+    final regCtrl = Get.isRegistered<RegistrationController>(tag: 'registration')
+        ? Get.find<RegistrationController>(tag: 'registration')
+        : Get.put(RegistrationController(), tag: 'registration');
 
     regCtrl.raiderName.value = driverNameController.text.trim();
     regCtrl.contactNumber.value =
@@ -110,7 +179,9 @@ class RiderDetailsController extends GetxController {
     regCtrl.gender.value = selectedGender.value;
 
     if (driverPhoto.value != null) {
-      regCtrl.driverPhotos.add(driverPhoto.value!);
+      regCtrl.driverPhotos.assignAll([driverPhoto.value!]);
+    } else if (existingDriverPhotoUrl.value.isNotEmpty) {
+      regCtrl.existingDriverPhotos.assignAll([existingDriverPhotoUrl.value]);
     }
 
     regCtrl.emergencyContactName.value = emergencyContactNameController.text
@@ -119,6 +190,6 @@ class RiderDetailsController extends GetxController {
         "${emergencySelectedCountryCode.value}${emergencyContactNumberController.text.trim()}";
 
     // Navigate to next screen
-    Get.to(IdentityCardScreen());
+    Get.to(() => IdentityCardScreen());
   }
 }

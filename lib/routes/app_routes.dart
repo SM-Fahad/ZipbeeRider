@@ -8,6 +8,7 @@ import 'package:ZipBee_Driver/features/app_quzi/screen/app_quiz_screen.dart';
 import 'package:ZipBee_Driver/features/auth/forgot_password/screen/forgot_password_screen.dart';
 import 'package:ZipBee_Driver/features/auth/login/screen/login_screen.dart';
 import 'package:ZipBee_Driver/features/auth/login/screen/profile_check_screen.dart';
+import 'package:ZipBee_Driver/features/auth/login/screen/application_rejected_screen.dart';
 import 'package:ZipBee_Driver/features/auth/rider_details/screen/rider_details_screen.dart';
 import 'package:ZipBee_Driver/features/auth/verification/screen/verification_screen.dart';
 import 'package:ZipBee_Driver/features/auth/wallet/screen/wallet_screen.dart';
@@ -38,6 +39,7 @@ class AppRoutes {
   static String loginSignupScreen = '/loginSignupScreen';
   static String forgotPasswordScreen = '/forgotPasswordScreen';
   static String profileCheckScreen = '/profileCheckScreen';
+  static String applicationRejectedScreen = '/applicationRejectedScreen';
   static String verificationScreen = '/verificationScreen';
   static String appQuizScreen = '/appQuizScreen';
   static String appCouresScreen = '/appCouresScreen';
@@ -67,6 +69,7 @@ class AppRoutes {
   static String getLoginSignupScreen() => loginSignupScreen;
   static String getForgotPasswordScreen() => forgotPasswordScreen;
   static String getProfileCheckScreen() => profileCheckScreen;
+  static String getApplicationRejectedScreen() => applicationRejectedScreen;
   static String getVerificationScreen() => verificationScreen;
   static String getAppQuizScreen() => appQuizScreen;
   static String getAppCouresScreen() => appCouresScreen;
@@ -90,6 +93,10 @@ class AppRoutes {
     GetPage(name: loginSignupScreen, page: () => LoginSignupScreen()),
     GetPage(name: forgotPasswordScreen, page: () => ForgotPasswordScreen()),
     GetPage(name: profileCheckScreen, page: () => ProfileCheckScreen()),
+    GetPage(
+      name: applicationRejectedScreen,
+      page: () => ApplicationRejectedScreen(),
+    ),
     GetPage(name: verificationScreen, page: () => VerificationScreen()),
     GetPage(name: appQuizScreen, page: () => AppQuizScreen()),
     GetPage(name: appCouresScreen, page: () => AppCouresScreen()),

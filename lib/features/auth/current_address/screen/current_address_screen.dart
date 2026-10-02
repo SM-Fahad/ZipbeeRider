@@ -5,7 +5,6 @@ import 'package:ZipBee_Driver/features/auth/current_address/widget/address_picke
 import 'package:ZipBee_Driver/features/auth/login/controller/profile_check_controller.dart';
 import 'package:ZipBee_Driver/features/auth/registration/controller/registration_controller.dart';
 import 'package:ZipBee_Driver/features/google_map/service/one_map_service.dart';
-import 'package:ZipBee_Driver/routes/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:get/get.dart';
@@ -435,6 +434,7 @@ class CurrentAddressScreen extends StatelessWidget {
                     final success = await regCtrl.submitRegistration();
 
                     if (success) {
+                      regCtrl.resetForm();
                       final profileCheckController =
                           Get.isRegistered<ProfileCheckController>()
                               ? Get.find<ProfileCheckController>()

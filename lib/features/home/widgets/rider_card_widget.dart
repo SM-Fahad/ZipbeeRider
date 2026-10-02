@@ -53,6 +53,48 @@ class RiderCardWidget extends StatelessWidget {
     return order.payType;
   }
 
+  bool get isCashPayment {
+    final type = order.payType.toUpperCase();
+    return type == 'COD' || type == 'CASH';
+  }
+
+  Widget _buildPaymentTypeIcon() {
+    final type = order.payType.toUpperCase();
+    if (isCashPayment) {
+      return Tooltip(
+        message: 'Cash',
+        child: Image.asset(
+          IconPath.money,
+          width: 18,
+          height: 18,
+          errorBuilder: (context, error, stackTrace) => const Icon(
+            Icons.payments_outlined,
+            color: Colors.green,
+            size: 18,
+          ),
+        ),
+      );
+    } else if (type == 'WALLET') {
+      return const Tooltip(
+        message: 'Wallet',
+        child: Icon(
+          Icons.account_balance_wallet_outlined,
+          color: Color(0xFF2E7D32),
+          size: 18,
+        ),
+      );
+    } else {
+      return const Tooltip(
+        message: 'Credit Card',
+        child: Icon(
+          Icons.credit_card,
+          color: Color(0xFF1976D2),
+          size: 18,
+        ),
+      );
+    }
+  }
+
   String get totalDistanceText {
     final distance = order.effectiveDistanceKm;
     return '${distance.toStringAsFixed(1)}Km';
@@ -257,6 +299,8 @@ class RiderCardWidget extends StatelessWidget {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        _buildPaymentTypeIcon(),
+                        const SizedBox(width: 5),
                         Text(
                           displayExtraFee > 0
                               ? '\$${displayBasePay.toStringAsFixed(2)} + \$${displayExtraFee.toStringAsFixed(2)}'
@@ -368,10 +412,9 @@ class RiderCardWidget extends StatelessWidget {
                       Row(
                         children: [
                           Image.asset(
-                            IconPath.location_red,
-                            // isRoundTrip
-                            //     ? IconPath.location_blue
-                            //     : IconPath.location_red,
+                            isRoundTrip
+                                ? IconPath.location_blue
+                                : IconPath.location_red,
                             width: 18,
                             height: 18,
                           ),

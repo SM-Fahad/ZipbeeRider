@@ -14,6 +14,43 @@ class AutoOrderPopupDialog extends GetView<AutoPopupController> {
     return '~$distStr Km';
   }
 
+  Widget _buildPaymentTypeIcon(String payType) {
+    final type = payType.toUpperCase();
+    if (type == 'COD' || type == 'CASH') {
+      return Tooltip(
+        message: 'Cash',
+        child: Image.asset(
+          IconPath.money,
+          width: 18,
+          height: 18,
+          errorBuilder: (context, error, stackTrace) => const Icon(
+            Icons.payments_outlined,
+            color: Colors.green,
+            size: 18,
+          ),
+        ),
+      );
+    } else if (type == 'WALLET') {
+      return const Tooltip(
+        message: 'Wallet',
+        child: Icon(
+          Icons.account_balance_wallet_outlined,
+          color: Color(0xFF2E7D32),
+          size: 18,
+        ),
+      );
+    } else {
+      return const Tooltip(
+        message: 'Credit Card',
+        child: Icon(
+          Icons.credit_card,
+          color: Color(0xFF1976D2),
+          size: 18,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Obx(() {
@@ -139,6 +176,8 @@ class AutoOrderPopupDialog extends GetView<AutoPopupController> {
                               Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
+                                  _buildPaymentTypeIcon(popup.payType),
+                                  const SizedBox(width: 5),
                                   Text(
                                     popup.displayExtraFee > 0
                                         ? '\$${popup.displayExtraFee.toStringAsFixed(2)} + \$${popup.displayBasePay.toStringAsFixed(2)}'

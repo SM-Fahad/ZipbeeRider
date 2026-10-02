@@ -37,6 +37,8 @@ class IconPath {
   static String van = 'assets/icons/van.png';
 
   static String money = 'assets/icons/money.png';
+  static String cash = 'assets/icons/cash.png';
+  static String visa = 'assets/icons/visa.png';
   static String oneway = 'assets/icons/one_way.png';
   static String roundtrip = 'assets/icons/round.png';
 

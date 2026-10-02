@@ -39,14 +39,6 @@ class TakeNowScreen extends StatelessWidget {
     return stops;
   }
 
-  List<OrderStopModel> _pickupStops(OrderModel order) {
-    return _sortedStops(order).where((stop) => stop.isPickup).toList();
-  }
-
-  List<OrderStopModel> _dropStops(OrderModel order) {
-    return _sortedStops(order).where((stop) => stop.isDrop).toList();
-  }
-
   String _subtitleForStop(OrderStopModel stop) {
     final shortName = stop.shortName.trim();
     if (shortName.isNotEmpty) {
@@ -219,8 +211,9 @@ class TakeNowScreen extends StatelessWidget {
                               final iconPath =
                                   deliveryTypeCtrl.deliveryTypeIconPath.value ??
                                   order.deliveryTypeIconPath;
-                              if (iconPath == null)
+                              if (iconPath == null) {
                                 return const SizedBox(width: 10);
+                              }
                               return Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -269,8 +262,7 @@ class TakeNowScreen extends StatelessWidget {
         }
 
         // Get destinations from orderStops
-        final pickupStops = _pickupStops(order);
-        final dropStops = _dropStops(order);
+        final sortedStops = _sortedStops(order);
         final remarks = _remarksForOrder(order);
         final isRoundTrip = order.routeType.toUpperCase() == 'ROUND';
 
@@ -293,43 +285,28 @@ class TakeNowScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
 
-                    ...pickupStops.map(
-                      (stop) => LocationTile(
+                    ...sortedStops.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final stop = entry.value;
+                      final isFirstPickup = index == 0 || stop.isPickup;
+                      final isFinalRoundStop = isRoundTrip &&
+                          index == sortedStops.length - 1 &&
+                          index > 0;
+                      final isBlue = isFirstPickup || isFinalRoundStop;
+
+                      return LocationTile(
                         title: '',
                         subtitle: _subtitleForStop(stop),
-                        distance: ctrl.getPickupDistanceAndTime(),
+                        distance: isFirstPickup
+                            ? ctrl.getPickupDistanceAndTime()
+                            : ctrl.getDeliveryDistanceAndTime(),
                         trailingTopText: _formatStopDistance(stop),
                         trailingBottomText: _formatStopTime(stop),
-                        isPickup: true,
+                        isPickup: isBlue,
                         pickupIconPath: IconPath.location_blue,
                         dropoffIconPath: IconPath.location_red,
-                      ),
-                    ),
-
-                    ...dropStops.map(
-                      (stop) => LocationTile(
-                        title: '',
-                        subtitle: _subtitleForStop(stop),
-                        distance: ctrl.getDeliveryDistanceAndTime(),
-                        trailingTopText: _formatStopDistance(stop),
-                        trailingBottomText: _formatStopTime(stop),
-                        isPickup: false,
-                        pickupIconPath: IconPath.location_blue,
-                        dropoffIconPath: IconPath.location_red,
-                      ),
-                    ),
-
-                    if (isRoundTrip && pickupStops.isNotEmpty)
-                      LocationTile(
-                        title: '',
-                        subtitle: _subtitleForStop(pickupStops.first),
-                        distance: ctrl.getDeliveryDistanceAndTime(),
-                        trailingTopText: _formatStopDistance(pickupStops.first),
-                        trailingBottomText: _formatStopTime(pickupStops.first),
-                        isPickup: true,
-                        pickupIconPath: IconPath.location_blue,
-                        dropoffIconPath: IconPath.location_red,
-                      ),
+                      );
+                    }),
 
                     const SizedBox(height: 20),
 
@@ -399,14 +376,25 @@ class TakeNowScreen extends StatelessWidget {
               child: Obx(() {
                 final sortedStopsList = _sortedStops(order);
                 final routeStops = sortedStopsList
+                    .asMap()
+                    .entries
                     .map(
-                      (stop) => OneMapRouteStop(
-                        latitude: stop.latitude,
-                        longitude: stop.longitude,
-                        address: stop.address,
-                        stopType: stop.isPickup ? 'PICKUP' : 'DROP',
-                        sequence: stop.sequence,
-                      ),
+                      (entry) {
+                        final index = entry.key;
+                        final stop = entry.value;
+                        final isFinalRoundStop = isRoundTrip &&
+                            index == sortedStopsList.length - 1 &&
+                            index > 0;
+                        final isPickupType = stop.isPickup || isFinalRoundStop;
+
+                        return OneMapRouteStop(
+                          latitude: stop.latitude,
+                          longitude: stop.longitude,
+                          address: stop.address,
+                          stopType: isPickupType ? 'PICKUP' : 'DROP',
+                          sequence: stop.sequence,
+                        );
+                      },
                     )
                     .toList();
 

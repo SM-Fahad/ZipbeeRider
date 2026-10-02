@@ -102,8 +102,8 @@ class VehicleCarLogScreen extends StatelessWidget {
             label('Vehicle Log Card*'),
             Obx(() {
               return filePickerBox(
-                // hint: 'Upload Vehicle Document',
                 file: ctrl.vehicleLogFile.value,
+                existingUrl: ctrl.existingVehicleLogUrl.value,
                 onTap: ctrl.pickVehicleLogFile,
               );
             }),
@@ -147,6 +147,7 @@ class VehicleCarLogScreen extends StatelessWidget {
             Obx(() {
               return filePickerBox(
                 file: ctrl.vehiclePolicyFile.value,
+                existingUrl: ctrl.existingVehiclePolicyUrl.value,
                 onTap: ctrl.pickPolicyFile,
               );
             }),
@@ -193,66 +194,112 @@ class VehicleCarLogScreen extends StatelessWidget {
   );
 
   /// ---------------- FILE PICKER BOX ----------------
-  Widget filePickerBox({required VoidCallback onTap, PlatformFile? file}) {
-    if (file == null) {
-      return GestureDetector(
-        onTap: onTap,
-        child: DottedBorder(
-          borderType: BorderType.RRect,
-          radius: Radius.circular(8),
-          dashPattern: [6, 4],
-          color: Colors.grey.shade400,
-          child: Container(
-            width: double.infinity,
-            padding: EdgeInsets.symmetric(vertical: 30, horizontal: 12),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Image.asset(IconPath.gararelly, height: 24, width: 24),
-                SizedBox(height: 8),
-                const SizedBox(height: 6),
-                Text(
-                  '(Max. File size: 25 MB)',
-                  style: TextStyle(fontSize: 11, color: Colors.grey),
-                ),
-              ],
+  Widget filePickerBox({
+    required VoidCallback onTap,
+    PlatformFile? file,
+    String? existingUrl,
+  }) {
+    if (file != null) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey.shade400, width: 1),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.insert_drive_file, color: Colors.grey[700]),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(file.name,
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${(file.size / 1024).toStringAsFixed(1)} KB',
+                    style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
+                ],
+              ),
             ),
-          ),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: onTap,
+              child: const Icon(Icons.edit, color: Colors.blue),
+            ),
+          ],
         ),
       );
     }
 
-    // When file is present show name and size with remove button
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade400, width: 1),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.insert_drive_file, color: Colors.grey[700]),
-          SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(file.name, style: TextStyle(fontWeight: FontWeight.w600)),
-                SizedBox(height: 4),
-                Text(
-                  '${(file.size / 1024).toStringAsFixed(1)} KB',
-                  style: TextStyle(color: Colors.grey, fontSize: 12),
-                ),
-              ],
+    if (existingUrl != null && existingUrl.isNotEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF7FDF9),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFF81C784), width: 1),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.check_circle_outline, color: Color(0xFF2E7D32)),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Document Already Uploaded',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF1B5E20),
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Tap edit to replace with new document',
+                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
+                ],
+              ),
             ),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: onTap,
+              child: const Icon(Icons.edit, color: Colors.blue),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return GestureDetector(
+      onTap: onTap,
+      child: DottedBorder(
+        borderType: BorderType.RRect,
+        radius: const Radius.circular(8),
+        dashPattern: const [6, 4],
+        color: Colors.grey.shade400,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.asset(IconPath.gararelly, height: 24, width: 24),
+              const SizedBox(height: 8),
+              const SizedBox(height: 6),
+              const Text(
+                '(Max. File size: 25 MB)',
+                style: TextStyle(fontSize: 11, color: Colors.grey),
+              ),
+            ],
           ),
-          SizedBox(width: 8),
-          GestureDetector(
-            onTap: onTap,
-            child: Icon(Icons.edit, color: Colors.blue),
-          ),
-        ],
+        ),
       ),
     );
   }

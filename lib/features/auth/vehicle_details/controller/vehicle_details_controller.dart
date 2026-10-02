@@ -23,13 +23,81 @@ class VehicleDetailsController extends GetxController {
   final driverImage = Rx<File?>(null);
   final passengerImage = Rx<File?>(null);
 
+  final existingFrontImageUrl = ''.obs;
+  final existingBackImageUrl = ''.obs;
+  final existingDriverImageUrl = ''.obs;
+  final existingPassengerImageUrl = ''.obs;
+
   final picker = ImagePicker();
   final VehicleTypeService _vehicleTypeService = VehicleTypeService();
 
   @override
   void onInit() {
     super.onInit();
+    _checkAndPrefill();
     fetchVehicleTypes();
+  }
+
+  void _checkAndPrefill() {
+    if (Get.isRegistered<RegistrationController>(tag: 'registration')) {
+      final regCtrl = Get.find<RegistrationController>(tag: 'registration');
+      if (regCtrl.vehiclePlateNumber.value.isNotEmpty) {
+        plateNumberController.text = regCtrl.vehiclePlateNumber.value;
+      }
+      if (regCtrl.vehicleType.value.isNotEmpty) {
+        selectedType.value = regCtrl.vehicleType.value;
+      }
+      if (regCtrl.vehicleBrand.value.isNotEmpty) {
+        brandController.text = regCtrl.vehicleBrand.value;
+      }
+      if (regCtrl.vehicleModel.value.isNotEmpty) {
+        modelController.text = regCtrl.vehicleModel.value;
+      }
+      if (regCtrl.registrationDate.value.isNotEmpty) {
+        registrationDateController.text =
+            _formatIsoToDisplay(regCtrl.registrationDate.value);
+      }
+      if (regCtrl.vehicleFront.value != null) {
+        frontImage.value = regCtrl.vehicleFront.value;
+      } else if (regCtrl.existingVehicleFront.value.isNotEmpty) {
+        existingFrontImageUrl.value = regCtrl.existingVehicleFront.value;
+      }
+      if (regCtrl.vehicleBack.value != null) {
+        backImage.value = regCtrl.vehicleBack.value;
+      } else if (regCtrl.existingVehicleBack.value.isNotEmpty) {
+        existingBackImageUrl.value = regCtrl.existingVehicleBack.value;
+      }
+      if (regCtrl.vehicleDriverSide.value != null) {
+        driverImage.value = regCtrl.vehicleDriverSide.value;
+      } else if (regCtrl.existingVehicleDriverSide.value.isNotEmpty) {
+        existingDriverImageUrl.value = regCtrl.existingVehicleDriverSide.value;
+      }
+      if (regCtrl.vehiclePassengerSide.value != null) {
+        passengerImage.value = regCtrl.vehiclePassengerSide.value;
+      } else if (regCtrl.existingVehiclePassengerSide.value.isNotEmpty) {
+        existingPassengerImageUrl.value =
+            regCtrl.existingVehiclePassengerSide.value;
+      }
+    }
+  }
+
+  String _formatIsoToDisplay(String raw) {
+    if (raw.trim().isEmpty) return '';
+    try {
+      final date = DateTime.parse(raw.trim());
+      return "${date.day}/${date.month}/${date.year}";
+    } catch (_) {
+      try {
+        if (raw.contains('T')) {
+          final part = raw.split('T')[0];
+          final parts = part.split('-');
+          if (parts.length == 3) {
+            return "${int.parse(parts[2])}/${int.parse(parts[1])}/${parts[0]}";
+          }
+        }
+      } catch (_) {}
+      return raw;
+    }
   }
 
   Future<void> fetchVehicleTypes() async {
@@ -104,24 +172,27 @@ class VehicleDetailsController extends GetxController {
       EasyLoading.showError('Please select registration date');
       return;
     }
-    if (frontImage.value == null) {
+    if (frontImage.value == null && existingFrontImageUrl.value.isEmpty) {
       EasyLoading.showError('Please upload vehicle front image');
       return;
     }
-    if (backImage.value == null) {
+    if (backImage.value == null && existingBackImageUrl.value.isEmpty) {
       EasyLoading.showError('Please upload vehicle back image');
       return;
     }
-    if (driverImage.value == null) {
+    if (driverImage.value == null && existingDriverImageUrl.value.isEmpty) {
       EasyLoading.showError('Please upload driver side vehicle image');
       return;
     }
-    if (passengerImage.value == null) {
+    if (passengerImage.value == null &&
+        existingPassengerImageUrl.value.isEmpty) {
       EasyLoading.showError('Please upload passenger side vehicle image');
       return;
     }
 
-    final regCtrl = Get.put(RegistrationController(), tag: 'registration');
+    final regCtrl = Get.isRegistered<RegistrationController>(tag: 'registration')
+        ? Get.find<RegistrationController>(tag: 'registration')
+        : Get.put(RegistrationController(), tag: 'registration');
 
     regCtrl.vehiclePlateNumber.value = plateNumberController.text.trim();
     regCtrl.vehicleType.value = selectedType.value;
@@ -141,11 +212,31 @@ class VehicleDetailsController extends GetxController {
       }
     } catch (e) {}
 
-    regCtrl.vehicleFront.value = frontImage.value;
-    regCtrl.vehicleBack.value = backImage.value;
-    regCtrl.vehicleDriverSide.value = driverImage.value;
-    regCtrl.vehiclePassengerSide.value = passengerImage.value;
+    if (frontImage.value != null) {
+      regCtrl.vehicleFront.value = frontImage.value;
+    } else if (existingFrontImageUrl.value.isNotEmpty) {
+      regCtrl.existingVehicleFront.value = existingFrontImageUrl.value;
+    }
 
-    Get.to(VehicleCarLogScreen());
+    if (backImage.value != null) {
+      regCtrl.vehicleBack.value = backImage.value;
+    } else if (existingBackImageUrl.value.isNotEmpty) {
+      regCtrl.existingVehicleBack.value = existingBackImageUrl.value;
+    }
+
+    if (driverImage.value != null) {
+      regCtrl.vehicleDriverSide.value = driverImage.value;
+    } else if (existingDriverImageUrl.value.isNotEmpty) {
+      regCtrl.existingVehicleDriverSide.value = existingDriverImageUrl.value;
+    }
+
+    if (passengerImage.value != null) {
+      regCtrl.vehiclePassengerSide.value = passengerImage.value;
+    } else if (existingPassengerImageUrl.value.isNotEmpty) {
+      regCtrl.existingVehiclePassengerSide.value =
+          existingPassengerImageUrl.value;
+    }
+
+    Get.to(() => VehicleCarLogScreen());
   }
 }

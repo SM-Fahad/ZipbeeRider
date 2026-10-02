@@ -19,6 +19,12 @@ class IdentityCardController extends GetxController {
   final backIdCard = Rx<File?>(null);
   final frontLicenseCard = Rx<File?>(null);
   final backLicenseCard = Rx<File?>(null);
+
+  final existingFrontIdUrl = ''.obs;
+  final existingBackIdUrl = ''.obs;
+  final existingFrontLicenseUrl = ''.obs;
+  final existingBackLicenseUrl = ''.obs;
+
   final licenseClassOptions = const [
     'Class 2B',
     'Class 2A',
@@ -30,6 +36,75 @@ class IdentityCardController extends GetxController {
   ];
 
   final ImagePicker _picker = ImagePicker();
+
+  @override
+  void onInit() {
+    super.onInit();
+    _checkAndPrefill();
+  }
+
+  void _checkAndPrefill() {
+    if (Get.isRegistered<RegistrationController>(tag: 'registration')) {
+      final regCtrl = Get.find<RegistrationController>(tag: 'registration');
+      if (regCtrl.identityCardNumber.value.isNotEmpty) {
+        nidController.text = regCtrl.identityCardNumber.value;
+      }
+      if (regCtrl.identityCardIssueDate.value.isNotEmpty) {
+        identityIssueDate.value =
+            _formatIsoToDisplay(regCtrl.identityCardIssueDate.value);
+      }
+      if (regCtrl.drivingLicenseNumber.value.isNotEmpty) {
+        licenseController.text = regCtrl.drivingLicenseNumber.value;
+      }
+      if (regCtrl.drivingLicenseIssueDate.value.isNotEmpty) {
+        drivingLicenseIssueDate.value =
+            _formatIsoToDisplay(regCtrl.drivingLicenseIssueDate.value);
+      }
+      if (regCtrl.licenseClass.value.isNotEmpty) {
+        selectedLicenseClass.value =
+            regCtrl.unmapLicenseClass(regCtrl.licenseClass.value);
+      }
+      if (regCtrl.nidFront.value != null) {
+        frontIdCard.value = regCtrl.nidFront.value;
+      } else if (regCtrl.existingNidFront.value.isNotEmpty) {
+        existingFrontIdUrl.value = regCtrl.existingNidFront.value;
+      }
+      if (regCtrl.nidBack.value != null) {
+        backIdCard.value = regCtrl.nidBack.value;
+      } else if (regCtrl.existingNidBack.value.isNotEmpty) {
+        existingBackIdUrl.value = regCtrl.existingNidBack.value;
+      }
+      if (regCtrl.dlFront.value != null) {
+        frontLicenseCard.value = regCtrl.dlFront.value;
+      } else if (regCtrl.existingDlFront.value.isNotEmpty) {
+        existingFrontLicenseUrl.value = regCtrl.existingDlFront.value;
+      }
+      if (regCtrl.dlBack.value != null) {
+        backLicenseCard.value = regCtrl.dlBack.value;
+      } else if (regCtrl.existingDlBack.value.isNotEmpty) {
+        existingBackLicenseUrl.value = regCtrl.existingDlBack.value;
+      }
+    }
+  }
+
+  String _formatIsoToDisplay(String raw) {
+    if (raw.trim().isEmpty) return '';
+    try {
+      final date = DateTime.parse(raw.trim());
+      return "${date.day}/${date.month}/${date.year}";
+    } catch (_) {
+      try {
+        if (raw.contains('T')) {
+          final part = raw.split('T')[0];
+          final parts = part.split('-');
+          if (parts.length == 3) {
+            return "${int.parse(parts[2])}/${int.parse(parts[1])}/${parts[0]}";
+          }
+        }
+      } catch (_) {}
+      return raw;
+    }
+  }
 
   /// Pick image from gallery
   Future<void> pickImage(Rx<File?> imageTarget) async {
@@ -75,11 +150,11 @@ class IdentityCardController extends GetxController {
       EasyLoading.showError('Please select NRIC issue date');
       return;
     }
-    if (frontIdCard.value == null) {
+    if (frontIdCard.value == null && existingFrontIdUrl.value.isEmpty) {
       EasyLoading.showError('Please upload NRIC front image');
       return;
     }
-    if (backIdCard.value == null) {
+    if (backIdCard.value == null && existingBackIdUrl.value.isEmpty) {
       EasyLoading.showError('Please upload NRIC back image');
       return;
     }
@@ -95,11 +170,11 @@ class IdentityCardController extends GetxController {
       EasyLoading.showError('Please select license class');
       return;
     }
-    if (frontLicenseCard.value == null) {
+    if (frontLicenseCard.value == null && existingFrontLicenseUrl.value.isEmpty) {
       EasyLoading.showError('Please upload driving license front image');
       return;
     }
-    if (backLicenseCard.value == null) {
+    if (backLicenseCard.value == null && existingBackLicenseUrl.value.isEmpty) {
       EasyLoading.showError('Please upload driving license back image');
       return;
     }
@@ -136,11 +211,23 @@ class IdentityCardController extends GetxController {
       return;
     }
 
-    final regCtrl = Get.put(RegistrationController(), tag: 'registration');
+    final regCtrl = Get.isRegistered<RegistrationController>(tag: 'registration')
+        ? Get.find<RegistrationController>(tag: 'registration')
+        : Get.put(RegistrationController(), tag: 'registration');
 
     regCtrl.identityCardNumber.value = nidController.text.trim();
-    regCtrl.nidFront.value = frontIdCard.value;
-    regCtrl.nidBack.value = backIdCard.value;
+    if (frontIdCard.value != null) {
+      regCtrl.nidFront.value = frontIdCard.value;
+    } else if (existingFrontIdUrl.value.isNotEmpty) {
+      regCtrl.existingNidFront.value = existingFrontIdUrl.value;
+    }
+
+    if (backIdCard.value != null) {
+      regCtrl.nidBack.value = backIdCard.value;
+    } else if (existingBackIdUrl.value.isNotEmpty) {
+      regCtrl.existingNidBack.value = existingBackIdUrl.value;
+    }
+
     regCtrl.drivingLicenseNumber.value = licenseController.text.trim();
     regCtrl.licenseClass.value = selectedLicenseClass.value;
 
@@ -160,9 +247,18 @@ class IdentityCardController extends GetxController {
       } catch (e) {}
     }
 
-    regCtrl.dlFront.value = frontLicenseCard.value;
-    regCtrl.dlBack.value = backLicenseCard.value;
+    if (frontLicenseCard.value != null) {
+      regCtrl.dlFront.value = frontLicenseCard.value;
+    } else if (existingFrontLicenseUrl.value.isNotEmpty) {
+      regCtrl.existingDlFront.value = existingFrontLicenseUrl.value;
+    }
 
-    Get.to(VehicleDetailsScreen());
+    if (backLicenseCard.value != null) {
+      regCtrl.dlBack.value = backLicenseCard.value;
+    } else if (existingBackLicenseUrl.value.isNotEmpty) {
+      regCtrl.existingDlBack.value = existingBackLicenseUrl.value;
+    }
+
+    Get.to(() => VehicleDetailsScreen());
   }
 }
