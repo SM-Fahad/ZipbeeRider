@@ -32,6 +32,8 @@ class OrderStopModel {
   final DateTime? failedAt;
   final String? failureReason;
   final OrderStopPayment? payment;
+  final double driverAdditionalFee;
+  final String? driverAdditionalFeeReason;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -69,6 +71,8 @@ class OrderStopModel {
     this.failedAt,
     this.failureReason,
     this.payment,
+    this.driverAdditionalFee = 0.0,
+    this.driverAdditionalFeeReason,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -131,6 +135,19 @@ class OrderStopModel {
         'failure_reason',
       ]),
       payment: payment.isNotEmpty ? OrderStopPayment.fromJson(payment) : null,
+      driverAdditionalFee: _readDouble(json, [
+        'driver_additional_fee',
+        'driverAdditionalFee',
+        'additionalFee',
+        'additional_fee',
+      ]),
+      driverAdditionalFeeReason: _readNullableString(json, [
+        'driver_additional_fee_reason',
+        'driverAdditionalFeeReason',
+        'additionalFeeReason',
+        'additional_fee_reason',
+        'reason',
+      ]),
       createdAt:
           _readDateTime(json, ['createdAt', 'created_at']) ?? DateTime.now(),
       updatedAt:
@@ -206,6 +223,8 @@ class OrderStopModel {
         'failure_reason',
       ]),
       payment: null,
+      driverAdditionalFee: 0.0,
+      driverAdditionalFeeReason: null,
       createdAt:
           _readDateTime(json, ['createdAt', 'created_at']) ?? DateTime.now(),
       updatedAt:
@@ -215,7 +234,10 @@ class OrderStopModel {
 
   Map<String, dynamic> toJson() {
     if (rawData != null) {
-      return Map<String, dynamic>.from(rawData!);
+      final map = Map<String, dynamic>.from(rawData!);
+      map['driver_additional_fee'] = driverAdditionalFee;
+      map['driver_additional_fee_reason'] = driverAdditionalFeeReason;
+      return map;
     }
 
     return {
@@ -251,9 +273,36 @@ class OrderStopModel {
       'failedAt': failedAt?.toIso8601String(),
       'failureReason': failureReason,
       'payment': payment?.toJson(),
+      'driver_additional_fee': driverAdditionalFee,
+      'driver_additional_fee_reason': driverAdditionalFeeReason,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
+  }
+
+  double get calculatedPriceDouble => double.tryParse(calculatedPrice) ?? 0.0;
+
+  double get baseDeliveryFee {
+    if (payment?.baseAmount != null && payment!.baseAmount! > 0) {
+      return payment!.baseAmount!;
+    }
+    final fee = driverAdditionalFee > 0
+        ? driverAdditionalFee
+        : (payment?.driverAdditionalFee ?? 0.0);
+    if (payment != null && payment!.amountDouble > 0) {
+      if (fee > 0 && payment!.amountDouble >= fee) {
+        return payment!.amountDouble - fee;
+      }
+      return payment!.amountDouble;
+    }
+    return calculatedPriceDouble;
+  }
+
+  double get totalAmountToCollect {
+    final fee = driverAdditionalFee > 0
+        ? driverAdditionalFee
+        : (payment?.driverAdditionalFee ?? 0.0);
+    return baseDeliveryFee + fee;
   }
 
   bool get isPickup => type == 'PICKUP';
@@ -394,6 +443,28 @@ class OrderStopModel {
     return fallback;
   }
 
+  static double? _readNullableDouble(
+    Map<String, dynamic> json,
+    List<String> keys,
+  ) {
+    for (final key in keys) {
+      final value = json[key];
+      if (value == null) {
+        continue;
+      }
+      if (value is num) {
+        return value.toDouble();
+      }
+      if (value is String) {
+        final parsed = double.tryParse(value);
+        if (parsed != null) {
+          return parsed;
+        }
+      }
+    }
+    return null;
+  }
+
   static DateTime? _readDateTime(Map<String, dynamic> json, List<String> keys) {
     for (final key in keys) {
       final value = json[key];
@@ -436,6 +507,9 @@ class OrderStopPayment {
   final String amount;
   final String status;
   final String discount;
+  final double? baseAmount;
+  final double? driverAdditionalFee;
+  final String? driverAdditionalFeeReason;
   final DateTime? collectedAt;
   final String? collectedBy;
   final DateTime? createdAt;
@@ -448,6 +522,9 @@ class OrderStopPayment {
     required this.amount,
     required this.status,
     required this.discount,
+    this.baseAmount,
+    this.driverAdditionalFee,
+    this.driverAdditionalFeeReason,
     this.collectedAt,
     this.collectedBy,
     this.createdAt,
@@ -465,6 +542,24 @@ class OrderStopPayment {
       amount: OrderStopModel._readString(json, ['amount'], fallback: '0'),
       status: OrderStopModel._readString(json, ['status'], fallback: 'UNPAID'),
       discount: OrderStopModel._readString(json, ['discount'], fallback: '0'),
+      baseAmount: OrderStopModel._readNullableDouble(json, [
+        'base_amount',
+        'baseAmount',
+        'baseDeliveryFee',
+      ]),
+      driverAdditionalFee: OrderStopModel._readNullableDouble(json, [
+        'driver_additional_fee',
+        'driverAdditionalFee',
+        'additionalFee',
+        'additional_fee',
+      ]),
+      driverAdditionalFeeReason: OrderStopModel._readNullableString(json, [
+        'driver_additional_fee_reason',
+        'driverAdditionalFeeReason',
+        'additionalFeeReason',
+        'additional_fee_reason',
+        'reason',
+      ]),
       collectedAt: OrderStopModel._readDateTime(json, [
         'collectedAt',
         'collected_at',
@@ -494,6 +589,9 @@ class OrderStopPayment {
       'amount': amount,
       'status': status,
       'discount': discount,
+      'base_amount': baseAmount,
+      'driver_additional_fee': driverAdditionalFee,
+      'driver_additional_fee_reason': driverAdditionalFeeReason,
       'collectedAt': collectedAt?.toIso8601String(),
       'collectedBy': collectedBy,
       'createdAt': createdAt?.toIso8601String(),

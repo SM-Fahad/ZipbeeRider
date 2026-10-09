@@ -14,6 +14,7 @@ import 'package:ZipBee_Driver/features/home/model/order_model.dart';
 import 'package:ZipBee_Driver/features/home/model/order_stop_model.dart';
 import 'package:ZipBee_Driver/features/order_progress/service/order_stop_progress_service.dart';
 import 'package:ZipBee_Driver/features/order_progress/screen/navigation_guideline_screen.dart';
+import 'package:ZipBee_Driver/features/scan_and_pay/screen/scan_and_pay_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:ZipBee_Driver/core/utils/custom_map_marker_helper.dart';
 import 'package:ZipBee_Driver/core/utils/location_helper.dart';
@@ -40,6 +41,9 @@ class OrderProcessController extends GetxController {
   final dragX = 0.0.obs;
   final notesController = TextEditingController();
   final cashCollectedController = TextEditingController();
+  final additionalFeeController = TextEditingController(text: '0.00');
+  final additionalFeeReasonController = TextEditingController();
+  final isStagingAdditionalFee = false.obs;
   final selectedImages = <String>[].obs;
   final uploadedProofUrls = <String>[].obs;
   final isUpdatingStep = false.obs;
@@ -248,6 +252,9 @@ class OrderProcessController extends GetxController {
 
   @override
   void onClose() {
+    additionalFeeController.removeListener(_syncCollectedCashWithTotal);
+    additionalFeeController.dispose();
+    additionalFeeReasonController.dispose();
     notesController.dispose();
     cashCollectedController.dispose();
     mapController?.dispose();
@@ -413,6 +420,7 @@ class OrderProcessController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    additionalFeeController.addListener(_syncCollectedCashWithTotal);
     _loadArguments();
     _setupMapData();
   }
@@ -546,11 +554,60 @@ class OrderProcessController extends GetxController {
   }
 
   double get codAmount {
-    final stopPayment = selectedStop.value?.payment;
-    if (stopPayment == null) {
-      return 0;
+    return totalAmountToCollect;
+  }
+
+  bool get isCodPayment {
+    final stop = selectedStop.value;
+    final stopType = stop?.payment?.payType.trim().toUpperCase();
+    if (stopType != null && stopType.isNotEmpty) {
+      return stopType == 'COD' || stopType == 'COD_SENDER' || stopType == 'CASH';
     }
-    return double.tryParse(stopPayment.amount) ?? 0;
+    final orderType = (orderDetail.value?.payType ?? '').trim().toUpperCase();
+    return orderType == 'COD' || orderType == 'COD_SENDER' || orderType == 'CASH';
+  }
+
+  double get baseDeliveryFee {
+    final stop = selectedStop.value;
+    if (stop != null && stop.baseDeliveryFee > 0) {
+      return stop.baseDeliveryFee;
+    }
+    final stopPayment = selectedStop.value?.payment;
+    if (stopPayment != null) {
+      final amt = double.tryParse(stopPayment.amount) ?? 0.0;
+      if (amt > 0) return amt;
+    }
+    final order = orderDetail.value;
+    if (order != null && isCodPayment) {
+      final cost = order.totalCostDouble;
+      if (cost > 0) return cost;
+    }
+    return 0.0;
+  }
+
+  double get enteredAdditionalFee {
+    final raw = additionalFeeController.text.trim();
+    return double.tryParse(raw) ?? 0.0;
+  }
+
+  double get totalAmountToCollect {
+    final base = baseDeliveryFee;
+    final add = enteredAdditionalFee;
+    return base + add;
+  }
+
+  bool get shouldShowPaymentSection {
+    final stop = selectedStop.value;
+    if (stop == null) return false;
+    if (isCurrentStopUnpaid) return true;
+    if (stop.isDrop) return true;
+    return false;
+  }
+
+  void _syncCollectedCashWithTotal() {
+    final total = totalAmountToCollect;
+    final text = total % 1 == 0 ? total.toInt().toString() : total.toStringAsFixed(2);
+    cashCollectedController.text = text;
   }
 
   int get currentStopNumber {
@@ -570,7 +627,23 @@ class OrderProcessController extends GetxController {
   }
 
   String? get customerImage {
-    return orderDetail.value?.user.image;
+    final image = orderDetail.value?.user.image?.trim();
+    if (image == null || image.isEmpty || image.toLowerCase() == 'null') {
+      return null;
+    }
+    if (image.startsWith('http://') || image.startsWith('https://')) {
+      return image;
+    }
+    if (image.startsWith('file:') ||
+        image.startsWith('/Users/') ||
+        image.startsWith('/data/')) {
+      return null;
+    }
+    final cleanPath = image.startsWith('/') ? image.substring(1) : image;
+    final base = ApiEndPoint.baseUrl.endsWith('/')
+        ? ApiEndPoint.baseUrl.substring(0, ApiEndPoint.baseUrl.length - 1)
+        : ApiEndPoint.baseUrl;
+    return '$base/$cleanPath';
   }
 
   bool get isBusy {
@@ -1237,6 +1310,15 @@ class OrderProcessController extends GetxController {
       return;
     }
 
+    final addFee = enteredAdditionalFee;
+    final addReason = additionalFeeReasonController.text.trim();
+    if (addFee > 0 && addReason.isEmpty) {
+      errorMessage.value =
+          'Please enter a reason for the additional fee (e.g. Condo parking, ERP toll)';
+      EasyLoading.showError(errorMessage.value);
+      return;
+    }
+
     if (uploadedProofUrls.isEmpty) {
       errorMessage.value = 'Please upload at least one proof photo';
       EasyLoading.showError(errorMessage.value);
@@ -1247,22 +1329,47 @@ class OrderProcessController extends GetxController {
       isCompleting.value = true;
       errorMessage.value = '';
 
-      final codCollected = double.tryParse(cashCollectedController.text.trim());
+      if (addFee > 0) {
+        try {
+          await orderCompletionService.updateStopAdditionalFee(
+            stopId: stop.id,
+            additionalFee: addFee,
+            reason: addReason,
+          );
+        } catch (feeError) {
+          debugPrint('Note: updateStopAdditionalFee staging warning: $feeError');
+        }
+      }
+
+      final enteredCash = double.tryParse(cashCollectedController.text.trim());
+      final double? codCollected;
+      if (isCodPayment && (isCurrentStopUnpaid || totalAmountToCollect > 0)) {
+        codCollected = enteredCash ?? totalAmountToCollect;
+      } else if (enteredCash != null && enteredCash > 0) {
+        codCollected = enteredCash;
+      } else {
+        codCollected = null;
+      }
+
       final response = await orderCompletionService.completeOrderStop(
         stopId: stop.id,
         proofUrls: uploadedProofUrls.toList(),
         notes: notesController.text.trim().isEmpty
             ? null
             : notesController.text.trim(),
-        codCollected: cashCollectedController.text.trim().isEmpty
-            ? null
-            : codCollected,
+        codCollected: codCollected,
+        additionalFee: addFee > 0 ? addFee : null,
+        additionalFeeReason: addFee > 0 && addReason.isNotEmpty ? addReason : null,
       );
 
       final completedStop = _mergeStopPayload(selectedStopData.value, {
         'status': 'COMPLETED',
         'completedAt': DateTime.now().toUtc().toIso8601String(),
         'proofs': uploadedProofUrls.toList(),
+        'driver_additional_fee': addFee,
+        'driver_additional_fee_reason': addReason,
+        'driverAdditionalFee': addFee,
+        'driverAdditionalFeeReason': addReason,
         'notes': notesController.text.trim().isEmpty
             ? null
             : notesController.text.trim(),
@@ -1293,6 +1400,67 @@ class OrderProcessController extends GetxController {
       EasyLoading.showError(errorMessage.value);
     } finally {
       isCompleting.value = false;
+    }
+  }
+
+  Future<void> onScanAndPayTapped() async {
+    final stop = selectedStop.value;
+    final order = orderDetail.value;
+    if (stop == null || order == null) return;
+
+    final addFee = enteredAdditionalFee;
+    final reason = additionalFeeReasonController.text.trim();
+
+    if (addFee > 0 && reason.isEmpty) {
+      EasyLoading.showError(
+        'Please enter a reason for the additional fee (e.g. Condo parking, ERP toll)',
+      );
+      return;
+    }
+
+    try {
+      isStagingAdditionalFee.value = true;
+      EasyLoading.show(status: 'Updating fee...');
+
+      if (addFee > 0) {
+        final response = await orderCompletionService.updateStopAdditionalFee(
+          stopId: stop.id,
+          additionalFee: addFee,
+          reason: reason,
+        );
+        debugPrint('Additional fee staged successfully: $response');
+
+        final responseData = response['data'] as Map<String, dynamic>?;
+        final mergedStop = _mergeStopPayload(selectedStopData.value, {
+          'driver_additional_fee': addFee,
+          'driver_additional_fee_reason': reason,
+          'driverAdditionalFee': addFee,
+          'driverAdditionalFeeReason': reason,
+          if (responseData?['totalAmountToCollect'] != null)
+            'totalAmountToCollect': responseData!['totalAmountToCollect'],
+        });
+        _replaceStopData(mergedStop);
+      }
+
+      EasyLoading.dismiss();
+
+      Get.to(
+        () => ScanAndPayScreen(),
+        arguments: {
+          'order': orderDetail.value,
+          'orderStopId': stop.id,
+          'baseDeliveryFee': baseDeliveryFee,
+          'additionalFee': addFee,
+          'additionalFeeReason': reason,
+          'totalAmount': totalAmountToCollect,
+        },
+      );
+    } catch (e) {
+      EasyLoading.dismiss();
+      final err = _cleanError(e);
+      EasyLoading.showError(err);
+    } finally {
+      isStagingAdditionalFee.value = false;
     }
   }
 
@@ -1411,6 +1579,11 @@ class OrderProcessController extends GetxController {
     selectedStopData.value = stop.toJson();
     if (clearForms) {
       _clearStopForm();
+    } else {
+      final fee = stop.driverAdditionalFee;
+      additionalFeeController.text = fee > 0 ? fee.toStringAsFixed(2) : '0.00';
+      additionalFeeReasonController.text = stop.driverAdditionalFeeReason ?? '';
+      _syncCollectedCashWithTotal();
     }
     _refreshMapData();
   }
@@ -1533,9 +1706,11 @@ class OrderProcessController extends GetxController {
     if (resetNotes) {
       notesController.clear();
     }
-    cashCollectedController.text = codAmount % 1 == 0
-        ? codAmount.toInt().toString()
-        : codAmount.toStringAsFixed(2);
+    final stop = selectedStop.value;
+    final fee = stop?.driverAdditionalFee ?? 0.0;
+    additionalFeeController.text = fee > 0 ? fee.toStringAsFixed(2) : '0.00';
+    additionalFeeReasonController.text = stop?.driverAdditionalFeeReason ?? '';
+    _syncCollectedCashWithTotal();
     selectedImages.clear();
     uploadedProofUrls.clear();
     errorMessage.value = '';

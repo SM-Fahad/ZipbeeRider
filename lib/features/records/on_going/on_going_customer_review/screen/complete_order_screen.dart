@@ -149,34 +149,25 @@ class CompleteOrderScreen extends StatelessWidget {
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
                                         color: Colors.grey[300],
-                                        image:
-                                            controller
-                                                    .customerInfo
-                                                    .value
-                                                    ?.image !=
-                                                null
-                                            ? DecorationImage(
-                                                image: NetworkImage(
-                                                  controller
-                                                      .customerInfo
-                                                      .value!
-                                                      .image!,
-                                                ),
-                                                fit: BoxFit.cover,
-                                              )
-                                            : null,
                                       ),
-                                      child:
-                                          controller
-                                                  .customerInfo
-                                                  .value
-                                                  ?.image ==
-                                              null
-                                          ? Icon(
-                                              Icons.person,
-                                              color: Colors.grey[600],
-                                            )
-                                          : null,
+                                      child: ClipOval(
+                                        child: () {
+                                          final img = controller.customerInfo.value?.image?.trim();
+                                          final isValidUrl = img != null &&
+                                              img.isNotEmpty &&
+                                              img.toLowerCase() != 'null' &&
+                                              img.startsWith('http');
+                                          if (isValidUrl) {
+                                            return Image.network(
+                                              img,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (_, __, ___) =>
+                                                  Icon(Icons.person, color: Colors.grey[600], size: 40),
+                                            );
+                                          }
+                                          return Icon(Icons.person, color: Colors.grey[600], size: 40);
+                                        }(),
+                                      ),
                                     ),
                                     SizedBox(width: 12),
                                     // Customer Info

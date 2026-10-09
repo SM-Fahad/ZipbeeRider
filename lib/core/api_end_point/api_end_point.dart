@@ -40,6 +40,12 @@ class ApiEndPoint {
       '$baseUrl/order/raider-confirmation/$orderId';
   static String reorderOrderStops(int orderId) =>
       '$baseUrl/order/$orderId/reorder-stops';
+  static String orderStopAdditionalFee(int stopId) =>
+      '$baseUrl/order/stops/$stopId/additional-fee';
+  static String orderStopComplete(int stopId) =>
+      '$baseUrl/order/stops/$stopId/complete';
+  static String orderDetail(int orderId) =>
+      '$baseUrl/order/$orderId';
 
   static String get addMoney => '$baseUrl/wallet/add-money/mobile';
 

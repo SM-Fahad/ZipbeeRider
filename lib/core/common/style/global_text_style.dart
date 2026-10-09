@@ -8,10 +8,12 @@ TextStyle getTextStyle({
   double lineHeight = 21.0,
   TextAlign textAlign = TextAlign.center,
   Color color = Colors.black,
+  FontStyle? fontStyle,
 }) {
   return GoogleFonts.nunitoSans(
     fontSize: fontSize.sp,
     fontWeight: fontWeight,
     color: color,
+    fontStyle: fontStyle,
   );
 }
