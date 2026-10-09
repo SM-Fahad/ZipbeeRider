@@ -95,7 +95,9 @@ class AccountScreen extends StatelessWidget {
                     children: [
                       CircleAvatar(
                         radius: w * 0.09,
-                        backgroundImage: controller.driverPhoto.value.isNotEmpty
+                        backgroundImage: (controller.driverPhoto.value.isNotEmpty &&
+                                (controller.driverPhoto.value.startsWith('http://') ||
+                                    controller.driverPhoto.value.startsWith('https://')))
                             ? NetworkImage(controller.driverPhoto.value)
                             : AssetImage(ImagePath.profile) as ImageProvider,
                       ),

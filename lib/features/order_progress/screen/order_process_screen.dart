@@ -6,7 +6,6 @@ import 'package:ZipBee_Driver/core/utils/order_color_helper.dart';
 import 'package:ZipBee_Driver/features/home/model/order_model.dart';
 import 'package:ZipBee_Driver/features/home/model/order_stop_model.dart';
 import 'package:ZipBee_Driver/features/order_progress/controller/order_process_controller.dart';
-import 'package:ZipBee_Driver/features/scan_and_pay/screen/scan_and_pay_screen.dart';
 import 'package:ZipBee_Driver/routes/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
@@ -168,7 +167,7 @@ class OrderProcessScreen extends StatelessWidget {
                         const SizedBox(height: 20),
                         _buildDeliveryNotesSection(),
                         const SizedBox(height: 20),
-                        if (controller.isCurrentStopUnpaid) ...[
+                        if (controller.shouldShowPaymentSection) ...[
                           _buildCodAmountSection(),
                           const SizedBox(height: 20),
                         ],
@@ -218,16 +217,19 @@ class OrderProcessScreen extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: Colors.grey[300],
-                  image: controller.customerImage != null
-                      ? DecorationImage(
-                          image: NetworkImage(controller.customerImage!),
-                          fit: BoxFit.cover,
-                        )
-                      : null,
                 ),
-                child: controller.customerImage == null
-                    ? Icon(Icons.person, color: Colors.grey[600])
-                    : null,
+                child: ClipOval(
+                  child: (controller.customerImage != null &&
+                          controller.customerImage!.isNotEmpty &&
+                          controller.customerImage!.startsWith('http'))
+                      ? Image.network(
+                          controller.customerImage!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Icon(Icons.person, color: Colors.grey[600], size: 40),
+                        )
+                      : Icon(Icons.person, color: Colors.grey[600], size: 40),
+                ),
               ),
               const SizedBox(width: 12),
               Column(
@@ -796,87 +798,330 @@ class OrderProcessScreen extends StatelessWidget {
 
   Widget _buildCodAmountSection() {
     return Obx(() {
-      final shouldShowCodSection =
-          controller.isCurrentStopUnpaid &&
-          controller.slideButtonText == 'Complete Stop';
-
-      if (!shouldShowCodSection) {
+      if (!controller.shouldShowPaymentSection) {
         return const SizedBox.shrink();
       }
 
-      if (controller.cashCollectedController.text.isEmpty) {
-        final amountText = controller.codAmount % 1 == 0
-            ? controller.codAmount.toInt().toString()
-            : controller.codAmount.toStringAsFixed(2);
-        controller.cashCollectedController.text = amountText;
-      }
+      final baseFee = controller.baseDeliveryFee;
+      final addFee = controller.enteredAdditionalFee;
+      final totalToCollect = controller.totalAmountToCollect;
 
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Collected Cash Amount',
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.grey.shade300),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header with Scan & Pay Button
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.payments_outlined,
+                    color: Colors.blue.shade700,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Fee & Payment',
+                    style: getTextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                ElevatedButton.icon(
+                  onPressed: controller.isStagingAdditionalFee.value
+                      ? null
+                      : controller.onScanAndPayTapped,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor:
+                        _getOrderColor(controller.orderDetail.value),
+                    foregroundColor: Colors.black,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  icon: controller.isStagingAdditionalFee.value
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.qr_code_2, size: 18),
+                  label: const Text('Scan & Pay'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            const Divider(height: 1),
+            const SizedBox(height: 14),
+
+            // Base Delivery Fee (Read-Only)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.lock_outline,
+                      size: 15,
+                      color: Colors.grey.shade600,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Base Delivery Fee',
+                      style: getTextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: Text(
+                    '\$${baseFee.toStringAsFixed(2)}',
+                    style: getTextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // Additional Fee Input
+            Text(
+              'Additional Fee (Other Fee)',
+              style: getTextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 6),
+            TextFormField(
+              controller: controller.additionalFeeController,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(
+                prefixText: '\$ ',
+                hintText: '0.00',
+                isDense: true,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Reason for Additional Fee
+            Row(
+              children: [
+                Text(
+                  'Reason for Additional Fee',
                   style: getTextStyle(
-                    fontSize: 14,
+                    fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-              ),
-              ElevatedButton.icon(
-                onPressed: controller.orderDetail.value == null
-                    ? null
-                    : () {
-                        Get.to(
-                          () => ScanAndPayScreen(),
-                          arguments: {
-                            'order': controller.orderDetail.value,
-                            'orderStopId': controller.selectedStop.value?.id,
-                          },
-                        );
-                      },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                      _getOrderColor(controller.orderDetail.value),
-                  foregroundColor: Colors.black,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 10,
+                if (addFee > 0)
+                  Text(
+                    ' *',
+                    style: getTextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.red,
+                    ),
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+              ],
+            ),
+            const SizedBox(height: 6),
+            TextFormField(
+              controller: controller.additionalFeeReasonController,
+              decoration: InputDecoration(
+                hintText: 'e.g. Condo parking, ERP toll, waiting time',
+                hintStyle:
+                    getTextStyle(fontSize: 12, color: Colors.grey.shade400),
+                isDense: true,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+
+            // Dynamic Breakdown Summary Box
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF9FAFB),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Base Delivery Fee:',
+                        style: getTextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                      Text(
+                        '\$${baseFee.toStringAsFixed(2)}',
+                        style: getTextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (addFee > 0) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Additional Fee:',
+                          style: getTextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                        Text(
+                          '+ \$${addFee.toStringAsFixed(2)}',
+                          style: getTextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.blue.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  const SizedBox(height: 6),
+                  const Divider(height: 1),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Total to Collect:',
+                        style: getTextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Text(
+                        '\$${totalToCollect.toStringAsFixed(2)}',
+                        style: getTextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.green.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+
+            // Collected Cash Amount (Auto-filled, editable by driver)
+            Text(
+              'Collected Cash Amount',
+              style: getTextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 6),
+            TextFormField(
+              controller: controller.cashCollectedController,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(
+                prefixText: '\$ ',
+                hintText: 'Enter collected cash amount',
+                isDense: true,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Expected: \$${totalToCollect.toStringAsFixed(2)}',
+                  style: getTextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.green.shade700,
                   ),
                 ),
-                icon: const Icon(Icons.qr_code_2, size: 18),
-                label: const Text('Scan & Pay'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          TextFormField(
-            controller: controller.cashCollectedController,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: InputDecoration(
-              hintText: 'Enter collected cash amount',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              contentPadding: const EdgeInsets.all(12),
+                Text(
+                  '(Auto-filled, editable if needed)',
+                  style: getTextStyle(
+                    fontSize: 11,
+                    color: Colors.grey.shade500,
+                  ),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Expected amount: \$${controller.codAmount.toStringAsFixed(2)}',
-            style: getTextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: Colors.green,
-            ),
-          ),
-        ],
+          ],
+        ),
       );
     });
   }

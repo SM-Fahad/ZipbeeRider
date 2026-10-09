@@ -67,23 +67,63 @@ class ScanAndPayScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
       ),
       child: Obx(
-        () => Column(
-          children: [
-            Text(
-              'Amount to be Collected',
-              style: getTextStyle(color: Colors.white70, fontSize: 15),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              '\$${c.codAmount.toStringAsFixed(2)}',
-              style: getTextStyle(
-                color: Colors.white,
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
+        () {
+          final total = c.codAmount;
+          final addFee = c.additionalFee.value;
+          final reason = c.additionalFeeReason.value;
+          final baseFare = c.baseDeliveryFee.value > 0
+              ? c.baseDeliveryFee.value
+              : (total > addFee ? total - addFee : total);
+
+          return Column(
+            children: [
+              Text(
+                'Amount to be Collected',
+                style: getTextStyle(color: Colors.white70, fontSize: 15),
               ),
-            ),
-          ],
-        ),
+              const SizedBox(height: 6),
+              Text(
+                '\$${total.toStringAsFixed(2)}',
+                style: getTextStyle(
+                  color: Colors.white,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              if (addFee > 0) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    'Base Fare: \$${baseFare.toStringAsFixed(2)} + Additional Fee: \$${addFee.toStringAsFixed(2)}',
+                    style: getTextStyle(
+                      color: const Color(0xFF4ADE80),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                if (reason.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'Reason: $reason',
+                    style: getTextStyle(
+                      color: Colors.white60,
+                      fontSize: 12,
+                      fontStyle: FontStyle.italic,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ],
+            ],
+          );
+        },
       ),
     );
   }
@@ -296,43 +336,78 @@ class ScanAndPayScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  _detailRow(
-                    'Total Cost',
-                    '\$${c.formatAmount(c.readPricingDouble('totalCost'))}',
-                    emphasize: true,
-                  ),
-                  _detailRow(
-                    'Total Distance',
-                    '${c.formatAmount(c.readPricingDouble('totalDistance'))} km',
-                  ),
-                  _detailRow(
-                    'Total Time',
-                    '${c.readPricingInt('totalTimeMin')} mins',
-                  ),
-                  _detailRow(
-                    'Base Price',
-                    '\$${c.formatAmount(c.readPricingDouble('basePrice'))}',
-                  ),
-                  _detailRow(
-                    'Delivery Type Charge',
-                    '\$${c.formatAmount(c.readPricingDouble('deliveryTypeCharge'))}',
-                  ),
-                  _detailRow(
-                    'Additional Service Fee',
-                    '\$${c.formatAmount(c.readPricingDouble('additionServiceFee'))}',
-                  ),
-                  _detailRow(
-                    'Total Fee',
-                    '\$${c.formatAmount(c.readPricingDouble('totalFee'))}',
-                  ),
-                  _detailRow(
-                    'Platform Fee',
-                    '\$${c.formatAmount(c.readPricingDouble('totalPlatformFee'))}',
-                  ),
-                  _detailRow('Drop Count', '${c.readPricingInt('dropCount')}'),
-                  _detailRow(
-                    'Surge Applied',
-                    c.readPricingBool('surgeApplied') ? 'Yes' : 'No',
+                  Builder(
+                    builder: (context) {
+                      final otherFeeFromSummary = c.readPricingDouble('otherFee');
+                      final otherFee = otherFeeFromSummary > 0
+                          ? otherFeeFromSummary
+                          : c.additionalFee.value;
+                      final otherFeeReason = (summary['otherFeeReason']?.toString() ??
+                              c.additionalFeeReason.value)
+                          .trim();
+
+                      final totalFromSummary = c.readPricingDouble('total') > 0
+                          ? c.readPricingDouble('total')
+                          : c.readPricingDouble('totalCost');
+                      final totalCost = totalFromSummary > 0
+                          ? totalFromSummary
+                          : (c.codAmount > 0 ? c.codAmount : (c.baseDeliveryFee.value + otherFee));
+
+                      final basePriceFromSummary = c.readPricingDouble('basePrice');
+                      final basePrice = basePriceFromSummary > 0
+                          ? basePriceFromSummary
+                          : c.baseDeliveryFee.value;
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _detailRow(
+                            'Total Cost',
+                            '\$${c.formatAmount(totalCost)}',
+                            emphasize: true,
+                          ),
+                          _detailRow(
+                            'Total Distance',
+                            '${c.formatAmount(c.readPricingDouble('totalDistance'))} km',
+                          ),
+                          _detailRow(
+                            'Total Time',
+                            '${c.readPricingInt('totalTimeMin')} mins',
+                          ),
+                          _detailRow(
+                            'Base Price',
+                            '\$${c.formatAmount(basePrice)}',
+                          ),
+                          if (otherFee > 0)
+                            _detailRow(
+                              'Other Fee',
+                              '\$${c.formatAmount(otherFee)}${otherFeeReason.isNotEmpty ? ' ($otherFeeReason)' : ''}',
+                              emphasize: true,
+                            ),
+                          _detailRow(
+                            'Delivery Type Charge',
+                            '\$${c.formatAmount(c.readPricingDouble('deliveryTypeCharge'))}',
+                          ),
+                          _detailRow(
+                            'Additional Service Fee',
+                            '\$${c.formatAmount(c.readPricingDouble('additionServiceFee'))}',
+                          ),
+                          _detailRow(
+                            'Total Fee',
+                            '\$${c.formatAmount(c.readPricingDouble('totalFee'))}',
+                          ),
+                          _detailRow(
+                            'Platform Fee',
+                            '\$${c.formatAmount(c.readPricingDouble('totalPlatformFee'))}',
+                          ),
+                          _detailRow('Drop Count', '${c.readPricingInt('dropCount')}'),
+                          _detailRow(
+                            'Surge Applied',
+                            c.readPricingBool('surgeApplied') ? 'Yes' : 'No',
+                          ),
+                        ],
+                      );
+                    },
                   ),
                   if (dropBreakdown.isNotEmpty) ...[
                     const SizedBox(height: 18),
@@ -347,6 +422,11 @@ class ScanAndPayScreen extends StatelessWidget {
                     ...dropBreakdown.asMap().entries.map((entry) {
                       final index = entry.key;
                       final item = entry.value;
+                      final dropFee = _numFrom(item['dropOffFee'] ?? item['price']);
+                      final dropAddFee = _numFrom(item['additionalFee']);
+                      final dropReason = (item['additionalFeeReason']?.toString() ?? '').trim();
+                      final dropTotal = _numFrom(item['total'] ?? (dropFee + dropAddFee));
+
                       return Container(
                         margin: const EdgeInsets.only(bottom: 10),
                         padding: const EdgeInsets.all(14),
@@ -367,35 +447,102 @@ class ScanAndPayScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 8),
                             _detailRow(
-                              'Price',
-                              '\$${c.formatAmount(_numFrom(item['price']))}',
+                              'Drop-off Fee',
+                              '\$${c.formatAmount(dropFee)}',
                               compact: true,
                             ),
+                            if (dropAddFee > 0)
+                              _detailRow(
+                                'Additional Fee (Other Fee)',
+                                '\$${c.formatAmount(dropAddFee)}${dropReason.isNotEmpty ? ' ($dropReason)' : ''}',
+                                compact: true,
+                              ),
                             _detailRow(
-                              'Rider Earnings',
-                              '\$${c.formatAmount(_numFrom(item['raiderEarnings']))}',
+                              'Total',
+                              '\$${c.formatAmount(dropTotal > 0 ? dropTotal : (dropFee + dropAddFee))}',
+                              emphasize: true,
                               compact: true,
                             ),
-                            _detailRow(
-                              'Distance',
-                              '${c.formatAmount(_numFrom(item['distance']))} km',
-                              compact: true,
-                            ),
-                            _detailRow(
-                              'Duration',
-                              item['durationText']?.toString() ??
-                                  '${_intFrom(item['durationMin'])} mins',
-                              compact: true,
-                            ),
-                            _detailRow(
-                              'Surge Multiplier',
-                              '${_numFrom(item['surgeMultiplier']).toStringAsFixed(0)}x',
-                              compact: true,
-                            ),
+                            if (item['raiderEarnings'] != null)
+                              _detailRow(
+                                'Rider Earnings',
+                                '\$${c.formatAmount(_numFrom(item['raiderEarnings']))}',
+                                compact: true,
+                              ),
+                            if (item['distance'] != null)
+                              _detailRow(
+                                'Distance',
+                                '${c.formatAmount(_numFrom(item['distance']))} km',
+                                compact: true,
+                              ),
+                            if (item['durationText'] != null || item['durationMin'] != null)
+                              _detailRow(
+                                'Duration',
+                                item['durationText']?.toString() ??
+                                    '${_intFrom(item['durationMin'])} mins',
+                                compact: true,
+                              ),
+                            if (item['surgeMultiplier'] != null)
+                              _detailRow(
+                                'Surge Multiplier',
+                                '${_numFrom(item['surgeMultiplier']).toStringAsFixed(0)}x',
+                                compact: true,
+                              ),
                           ],
                         ),
                       );
                     }),
+                  ] else if (c.currentStop != null) ...[
+                    const SizedBox(height: 18),
+                    Text(
+                      'Stop Breakdown',
+                      style: getTextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8F9FB),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            c.currentStop!.address,
+                            style: getTextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 8),
+                          _detailRow(
+                            'Base Fee',
+                            '\$${c.formatAmount(c.baseDeliveryFee.value)}',
+                            compact: true,
+                          ),
+                          if (c.additionalFee.value > 0)
+                            _detailRow(
+                              'Other Fee',
+                              '\$${c.formatAmount(c.additionalFee.value)}${c.additionalFeeReason.value.isNotEmpty ? ' (${c.additionalFeeReason.value})' : ''}',
+                              compact: true,
+                            ),
+                          _detailRow(
+                            'Total',
+                            '\$${c.formatAmount(c.codAmount)}',
+                            emphasize: true,
+                            compact: true,
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                   if (summary.isEmpty)
                     Padding(
