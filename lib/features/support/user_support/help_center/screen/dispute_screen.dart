@@ -1,6 +1,7 @@
 import 'package:ZipBee_Driver/core/common/style/global_text_style.dart';
 import 'package:ZipBee_Driver/core/utils/constants/appcolors.dart';
 import 'package:ZipBee_Driver/features/support/user_support/help_center/controller/dispute_controller.dart';
+import 'package:ZipBee_Driver/features/support/user_support/help_center/screen/dispute_details_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -285,68 +286,85 @@ class _DisputeHistoryCard extends StatelessWidget {
     final disputeId = _readInt(dispute['id']);
     final orderIdValue = _readInt(dispute['orderId']);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                'Order #$orderId',
-                style: getTextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.primaryFontColor,
+    final disputeController = Get.isRegistered<DisputeController>()
+        ? Get.find<DisputeController>()
+        : null;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () async {
+        await Get.to(
+          () => DisputeDetailsScreen(
+            disputeId: disputeId,
+            orderId: orderIdValue,
+            dispute: dispute,
+          ),
+        );
+        disputeController?.fetchDisputes(showLoader: false);
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Order #$orderId',
+                  style: getTextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.primaryFontColor,
+                  ),
                 ),
               ),
-            ),
-            _StatusBadge(label: status),
-          ],
-        ),
-        const SizedBox(height: 12),
-        _InfoRow(label: 'Issue', value: issueType),
-        // const SizedBox(height: 8),
-        // _InfoRow(label: 'Priority', value: priority),
-        const SizedBox(height: 8),
-        _InfoRow(label: 'Created', value: createdAt),
-        if (refundAmount != null) ...[
-          const SizedBox(height: 8),
-          _InfoRow(label: 'Refund', value: refundAmount),
-        ],
-        SizedBox(height: 8),
-        _InfoRow(label: 'Description', value: description),
-        if (proofImageUrl != null) ...[
-          const SizedBox(height: 8),
-          _ProofRow(imageUrl: proofImageUrl),
-        ],
-        if (status.toUpperCase() != 'PENDING') ...[
-          const SizedBox(height: 8),
-          _InfoRow(
-            label: 'Admin Note',
-            value: (adminNote == null || adminNote.isEmpty) ? 'N/A' : adminNote,
+              _StatusBadge(label: status),
+            ],
           ),
-          if (appeal != null) ...[
+          const SizedBox(height: 12),
+          _InfoRow(label: 'Issue', value: issueType),
+          // const SizedBox(height: 8),
+          // _InfoRow(label: 'Priority', value: priority),
+          const SizedBox(height: 8),
+          _InfoRow(label: 'Created', value: createdAt),
+          if (refundAmount != null) ...[
+            const SizedBox(height: 8),
+            _InfoRow(label: 'Deduction', value: refundAmount),
+          ],
+          const SizedBox(height: 8),
+          _InfoRow(label: 'Description', value: description),
+          if (proofImageUrl != null) ...[
+            const SizedBox(height: 8),
+            _ProofRow(imageUrl: proofImageUrl),
+          ],
+          if (status.toUpperCase() != 'PENDING') ...[
             const SizedBox(height: 8),
             _InfoRow(
-              label: 'Appeal Status',
-              value: appeal['status']?.toString() ?? 'UNKNOWN',
+              label: 'Admin Note',
+              value: (adminNote == null || adminNote.isEmpty) ? 'N/A' : adminNote,
             ),
-            const SizedBox(height: 8),
-            _InfoRow(
-              label: 'Appeal Note',
-              value: _formatNullableText(appeal['adminNote']),
-            ),
-          ] else if (canAppeal && disputeId != null && orderIdValue != null) ...[
-            const SizedBox(height: 12),
-            _AppealPrompt(
-              onPressed: () => onAppeal(
-                orderDisputeId: disputeId,
-                orderId: orderIdValue,
+            if (appeal != null) ...[
+              const SizedBox(height: 8),
+              _InfoRow(
+                label: 'Appeal Status',
+                value: appeal['status']?.toString() ?? 'UNKNOWN',
               ),
-            ),
+              const SizedBox(height: 8),
+              _InfoRow(
+                label: 'Appeal Note',
+                value: _formatNullableText(appeal['adminNote']),
+              ),
+            ] else if (canAppeal && disputeId != null && orderIdValue != null) ...[
+              const SizedBox(height: 12),
+              _AppealPrompt(
+                onPressed: () => onAppeal(
+                  orderDisputeId: disputeId,
+                  orderId: orderIdValue,
+                ),
+              ),
+            ],
           ],
         ],
-      ],
+      ),
     );
   }
 
@@ -372,10 +390,10 @@ class _DisputeHistoryCard extends StatelessWidget {
 
     final parsed = double.tryParse(amount);
     if (parsed == null) {
-      return amount;
+      return '\$$amount';
     }
 
-    return parsed.toStringAsFixed(2);
+    return '\$${parsed.toStringAsFixed(2)}';
   }
 
   bool _canShowAppealPrompt({

@@ -6,6 +6,7 @@ import 'package:ZipBee_Driver/features/notifications/model/notification_model.da
 import 'package:ZipBee_Driver/features/order_details/screen/order_details_screen.dart';
 import 'package:ZipBee_Driver/features/order_details/service/order_details_service.dart';
 import 'package:ZipBee_Driver/features/payment_method/screen/payment_method_screen.dart';
+import 'package:ZipBee_Driver/features/support/user_support/help_center/screen/dispute_details_screen.dart';
 import 'package:ZipBee_Driver/features/support/user_support/help_center/screen/dispute_screen.dart';
 import 'package:ZipBee_Driver/routes/app_routes.dart';
 import 'package:flutter/material.dart';
@@ -119,6 +120,20 @@ class NotificationsController extends GetxController {
       return;
     }
 
+    if (item.redirectType?.toUpperCase() == 'DISPUTE_DETAILS' ||
+        item.screen == 'DisputeDetails' ||
+        item.type.toUpperCase() == 'DISPUTE_RESOLVED') {
+      if (item.disputeId != null || item.orderId != null) {
+        Get.to(() => DisputeDetailsScreen(
+              disputeId: item.disputeId,
+              orderId: item.orderId,
+            ));
+      } else {
+        Get.to(() => const DisputeScreen());
+      }
+      return;
+    }
+
     switch (item.type.toUpperCase()) {
       case 'NEW_MESSAGE':
         final orderId = item.orderId;
@@ -161,7 +176,14 @@ class NotificationsController extends GetxController {
         Get.to(() => OrderDetailsScreen(), arguments: orderId);
         return;
       case 'DISPUTE_RESOLVED':
-        Get.to(() => const DisputeScreen());
+        if (item.disputeId != null || item.orderId != null) {
+          Get.to(() => DisputeDetailsScreen(
+                disputeId: item.disputeId,
+                orderId: item.orderId,
+              ));
+        } else {
+          Get.to(() => const DisputeScreen());
+        }
         return;
     }
   }

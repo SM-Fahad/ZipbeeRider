@@ -126,13 +126,69 @@ class CreateDisputeAppealScreen extends StatelessWidget {
                     children: [
                       _FormGroup(
                         title: 'What Happened?',
-                        child: TextFormField(
-                          controller: controller.reasonController,
-                          minLines: 5,
-                          maxLines: 7,
-                          decoration: _inputDecoration(
-                            'Describe why this decision should be reviewed',
-                          ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            TextFormField(
+                              controller: controller.reasonController,
+                              minLines: 5,
+                              maxLines: 7,
+                              decoration: _inputDecoration(
+                                'Describe why this decision should be reviewed',
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              'Example Explanations (Tap to fill):',
+                              style: getTextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.black54,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 6,
+                              children: [
+                                _TemplateChip(
+                                  label: 'Handed directly to customer',
+                                  text:
+                                      "The customer selected 'Hand to me' for the delivery. I arrived at the correct address, knocked on the door, and personally handed the package directly to a resident at the door who confirmed the name on the order. I completed the delivery process immediately while at the location. Please check my GPS ping history to verify that I was at the customer's exact coordinates at the timestamp of completion.",
+                                  onSelected: (text) =>
+                                      controller.reasonController.text = text,
+                                ),
+                                _TemplateChip(
+                                  label: 'Merchant packaging issue',
+                                  text:
+                                      "The merchant packed the items poorly in a flimsy bag that was already structurally compromised upon pickup. I handled the order with extreme care and placed it securely in my thermal delivery bag throughout the trip. The photo taken at drop-off shows the package completely intact at the doorstep. Any damage inside the package was an issue with merchant packaging, not driver handling.",
+                                  onSelected: (text) =>
+                                      controller.reasonController.text = text,
+                                ),
+                                _TemplateChip(
+                                  label: 'Sealed bag missing items',
+                                  text:
+                                      "The restaurant handed me a stapled and taped-sealed bag, which I am strictly prohibited from opening due to food safety and hygiene regulations. I verified the receipt attached to the outside of the bag with the order checklist on my screen, and everything matched. If items were missing from inside the sealed bag, it is a merchant error, not a driver error.",
+                                  onSelected: (text) =>
+                                      controller.reasonController.text = text,
+                                ),
+                                _TemplateChip(
+                                  label: 'Traffic / Route delay',
+                                  text:
+                                      "I picked up the order immediately and proceeded directly to the delivery address. However, I encountered an unannounced road closure and emergency construction detour on Main Street, which added unavoidable time to the route. I messaged the customer through the app to inform them of the traffic delay as soon as it happened. The delay was entirely due to external traffic conditions beyond my control.",
+                                  onSelected: (text) =>
+                                      controller.reasonController.text = text,
+                                ),
+                                _TemplateChip(
+                                  label: 'Delivered to specified unit',
+                                  text:
+                                      "I arrived at the location specified in the app and verified the unit number before leaving the delivery. I took a clear photo showing the item placed safely at the correct doorstep as requested by the customer's delivery notes. The customer may have entered the wrong unit number in their address profile.",
+                                  onSelected: (text) =>
+                                      controller.reasonController.text = text,
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -150,7 +206,7 @@ class CreateDisputeAppealScreen extends StatelessWidget {
                             Row(
                               children: [
                                 const Expanded(
-                                  child: _SectionLabel(title: 'Proof Image'),
+                                  child: _SectionLabel(title: 'Add Proof (Optional)'),
                                 ),
                                 TextButton.icon(
                                   onPressed: controller.isUploadingImage.value
@@ -173,7 +229,7 @@ class CreateDisputeAppealScreen extends StatelessWidget {
                                     controller.isUploadingImage.value
                                         ? 'Uploading...'
                                         : controller.fileUrl.value == null
-                                            ? 'Upload'
+                                            ? 'Add Proof (Optional)'
                                             : 'Replace',
                                     style: getTextStyle(
                                       fontSize: 12,
@@ -184,7 +240,7 @@ class CreateDisputeAppealScreen extends StatelessWidget {
                               ],
                             ),
                             Text(
-                              'Upload one screenshot or photo as supporting proof.',
+                              'Attach delivery photograph or screenshot to support your case (Optional).',
                               style: getTextStyle(
                                 fontSize: 11,
                                 color: Colors.black54,
@@ -346,6 +402,38 @@ class _FormGroup extends StatelessWidget {
         const SizedBox(height: 8),
         child,
       ],
+    );
+  }
+}
+
+class _TemplateChip extends StatelessWidget {
+  const _TemplateChip({
+    required this.label,
+    required this.text,
+    required this.onSelected,
+  });
+
+  final String label;
+  final String text;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return ActionChip(
+      onPressed: () => onSelected(text),
+      backgroundColor: const Color(0xFFFFF4C2),
+      side: const BorderSide(color: Color(0xFFE9E0BC)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
+      label: Text(
+        label,
+        style: getTextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: Colors.black87,
+        ),
+      ),
     );
   }
 }

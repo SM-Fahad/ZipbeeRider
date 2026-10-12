@@ -110,17 +110,22 @@ class CreateDisputeAppealController extends GetxController {
       return;
     }
 
-    if (uploadedFileUrl == null || uploadedFileUrl.isEmpty) {
-      EasyLoading.showError('Proof image is required');
-      return;
-    }
-
     try {
       isSubmitting.value = true;
       final token = await SharedPreferencesHelper.getAccessToken();
       if (token == null || token.isEmpty) {
         EasyLoading.showError('Access token not found');
         return;
+      }
+
+      final Map<String, dynamic> requestPayload = {
+        'orderDisputeId': orderDisputeId,
+        'orderId': orderId,
+        'reason': reason,
+      };
+
+      if (uploadedFileUrl != null && uploadedFileUrl.isNotEmpty) {
+        requestPayload['fileUrl'] = uploadedFileUrl;
       }
 
       final response = await http.post(
@@ -130,12 +135,7 @@ class CreateDisputeAppealController extends GetxController {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
-        body: jsonEncode({
-          'orderDisputeId': orderDisputeId,
-          'orderId': orderId,
-          'reason': reason,
-          'fileUrl': uploadedFileUrl,
-        }),
+        body: jsonEncode(requestPayload),
       );
 
       final Map<String, dynamic> body =
