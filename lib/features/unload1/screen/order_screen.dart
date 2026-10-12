@@ -346,11 +346,8 @@ class OrderScreen extends StatelessWidget {
                           1.0,
                         );
 
-                        Color backgroundColor = Color.lerp(
-                          AppColors.onboardingIndicatorActive,
-                          Colors.blue.shade200,
-                          progress,
-                        )!;
+                        Color backgroundColor =
+                            AppColors.onboardingIndicatorActive;
 
                         double textOpacity = 1.0 - progress;
 

@@ -79,11 +79,8 @@ class SlideToTakeButtonWidget extends StatelessWidget {
       order: order,
     );
 
-    final endColor = collectTime?.toUpperCase() == 'ASAP'
-        ? AppColors.seconderyButtonColor
-        : secondColor;
-
-    return Color.lerp(baseColor, endColor, progress) ?? baseColor;
+    // Keep button in its original baseColor during slide without changing to blue
+    return baseColor;
   }
 
   @override

@@ -674,11 +674,7 @@ class CompleteOrderScreen extends StatelessWidget {
     return Obx(() {
       double progress = (controller.dragX.value / maxDrag).clamp(0.0, 1.0);
 
-      Color backgroundColor = Color.lerp(
-        AppColors.onboardingIndicatorActive,
-        Colors.blue.shade200,
-        progress,
-      )!;
+      Color backgroundColor = AppColors.onboardingIndicatorActive;
 
       double textOpacity = 1.0 - progress;
 
