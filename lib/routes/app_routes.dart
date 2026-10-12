@@ -25,6 +25,7 @@ import 'package:ZipBee_Driver/features/notifications/model/notification_model.da
 import 'package:ZipBee_Driver/features/onboarding/screen/onboarding_screen.dart';
 import 'package:ZipBee_Driver/features/records/screen/records_screen.dart';
 import 'package:ZipBee_Driver/features/splash/screen/splash_screen.dart';
+import 'package:ZipBee_Driver/features/support/user_support/help_center/screen/dispute_details_screen.dart';
 import 'package:get/get.dart';
 
 import '../features/delivery_success/screen/screen.dart';
@@ -59,6 +60,7 @@ class AppRoutes {
   static String notificationsScreen = '/notifications';
   static String notificationPromotionDetails = '/notificationPromotionDetails';
   static String googleMapScreen = '/googleMapScreen';
+  static String disputeDetailsScreen = '/disputeDetailsScreen';
 
   static String getSplashScreen() => splashScreen;
   static String getOnboardingScreen() => onboardingScreen;
@@ -82,6 +84,7 @@ class AppRoutes {
   static String getWalletScreen() => walletScreen;
   static String getdeliverySuccessScreen() => deliverySuccessScreen;
   static String getRiderChatScreen() => riderChatScreen;
+  static String getDisputeDetailsScreen() => disputeDetailsScreen;
 
   static List<GetPage> routes = [
     GetPage(name: splashScreen, page: () => SplashScreen()),
@@ -120,6 +123,20 @@ class AppRoutes {
     GetPage(
       name: notificationPromotionDetails,
       page: () => PromotionDetailsScreen(item: Get.arguments as NotificationModel),
+    ),
+    GetPage(
+      name: disputeDetailsScreen,
+      page: () {
+        final args = Get.arguments;
+        if (args is Map) {
+          return DisputeDetailsScreen(
+            disputeId: args['disputeId'] as int?,
+            orderId: args['orderId'] as int?,
+            dispute: args['dispute'] as Map<String, dynamic>?,
+          );
+        }
+        return const DisputeDetailsScreen();
+      },
     ),
     GetPage(name: googleMapScreen, page: () => GoogleMapScreen()),
   ];

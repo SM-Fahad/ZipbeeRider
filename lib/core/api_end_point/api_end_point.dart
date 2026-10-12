@@ -77,7 +77,12 @@ class ApiEndPoint {
   static String get helpArticles => '$baseUrl/article';
   static String get contentManagement => '$baseUrl/content-management';
   static String get disputes => '$baseUrl/disputes';
+  static String disputeDetail(dynamic id) => '$baseUrl/disputes/$id';
+  static String disputeByOrderId(dynamic orderId) =>
+      '$baseUrl/disputes?orderId=$orderId';
   static String get disputeAppeals => '$baseUrl/dispute-appeals';
+  static String disputeAppealsByDisputeId(dynamic orderDisputeId) =>
+      '$baseUrl/dispute-appeals?orderDisputeId=$orderDisputeId';
   static String getDisputes({required int page, required int limit}) =>
       '$baseUrl/disputes?page=$page&limit=$limit&participantType=rider';
   static String get upload => '$baseUrl/auth/upload';

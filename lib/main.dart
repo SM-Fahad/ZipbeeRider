@@ -65,6 +65,9 @@ void main() async{
   // Listen for foreground messages
   FirebaseNotificationReceive.listenForegroundMessages();
   
+  // Setup opened notification deep link listeners
+  FirebaseNotificationReceive.setupMessageOpenedAppListeners();
+  
   // Listen for token refresh
   listenTokenRefresh();
   
