@@ -103,8 +103,13 @@ class OrderStopModel {
       destinationContactNumber: _readString(destination, ['contact_number']),
       destinationFloorUnit: _readString(destination, ['floor_unit']),
       destinationNoteToDriver: _readNullableString(destination, [
-        'note_to_driver',
-      ]),
+            'note_to_driver',
+            'noteToDriver',
+          ]) ??
+          _readNullableString(json, [
+            'note_to_driver',
+            'noteToDriver',
+          ]),
       latitude: _readDouble(json, ['latitude']),
       longitude: _readDouble(json, ['longitude']),
       additionalInfo: _readNullableString(json, [
