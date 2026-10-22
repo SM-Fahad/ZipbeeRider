@@ -49,16 +49,43 @@ class TakeNowScreen extends StatelessWidget {
   }
 
   String _remarksForOrder(OrderModel order) {
+    final remarksList = <String>[];
+
     for (final stop in _sortedStops(order)) {
+      final noteToDriver = stop.destinationNoteToDriver?.trim();
+      if (noteToDriver != null &&
+          noteToDriver.isNotEmpty &&
+          !remarksList.contains(noteToDriver)) {
+        remarksList.add(noteToDriver);
+      }
+
       final note = stop.notes?.trim();
-      if (note != null && note.isNotEmpty) {
-        return note;
+      if (note != null && note.isNotEmpty && !remarksList.contains(note)) {
+        remarksList.add(note);
       }
 
       final additionalInfo = stop.additionalInfo?.trim();
-      if (additionalInfo != null && additionalInfo.isNotEmpty) {
-        return additionalInfo;
+      if (additionalInfo != null &&
+          additionalInfo.isNotEmpty &&
+          !remarksList.contains(additionalInfo)) {
+        remarksList.add(additionalInfo);
       }
+
+      final rawDestination = stop.rawData?['destination'];
+      final rawNote = rawDestination is Map
+          ? (rawDestination['note_to_driver']?.toString().trim() ??
+              rawDestination['noteToDriver']?.toString().trim())
+          : (stop.rawData?['note_to_driver']?.toString().trim() ??
+              stop.rawData?['noteToDriver']?.toString().trim());
+      if (rawNote != null &&
+          rawNote.isNotEmpty &&
+          !remarksList.contains(rawNote)) {
+        remarksList.add(rawNote);
+      }
+    }
+
+    if (remarksList.isNotEmpty) {
+      return remarksList.join('\n');
     }
 
     return 'No remarks';
