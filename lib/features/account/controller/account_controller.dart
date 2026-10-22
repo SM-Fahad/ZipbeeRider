@@ -180,6 +180,16 @@ class AccountController extends GetxController {
   Future<void> updateAutoPopupPermission(bool enabled) async {
     if (isAutoPopupUpdating.value) return;
 
+    if (enabled) {
+      if (Get.isRegistered<HomeController>()) {
+        final homeCtrl = Get.find<HomeController>();
+        if (!homeCtrl.isOnline.value) {
+          EasyLoading.showInfo('You have to go online to turn auto pop-up on.');
+          return;
+        }
+      }
+    }
+
     try {
       final token = await SharedPreferencesHelper.getAccessToken();
       if (token == null || token.isEmpty) {

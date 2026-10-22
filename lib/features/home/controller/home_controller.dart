@@ -116,6 +116,25 @@ class HomeController extends GetxController with WidgetsBindingObserver, RouteAw
     connectSocketIfLoggedIn();
     DeliveryTypeService().fetchDeliveryTypes();
     //initCompetitionSocket(baseUrl: ApiEndPoint.baseUrl);
+
+    ever(isOnline, (bool online) async {
+      try {
+        final accountCtrl = Get.isRegistered<AccountController>()
+            ? Get.find<AccountController>()
+            : Get.put(AccountController());
+        if (online) {
+          if (!accountCtrl.isAutoPopupEnabled.value) {
+            await accountCtrl.updateAutoPopupPermission(true);
+          }
+        } else {
+          if (accountCtrl.isAutoPopupEnabled.value) {
+            await accountCtrl.updateAutoPopupPermission(false);
+          }
+        }
+      } catch (e) {
+        logger.e('Error syncing auto popup on online change: $e');
+      }
+    });
   }
 
   Future<void> connectSocketIfLoggedIn() async {
@@ -1150,11 +1169,25 @@ class HomeController extends GetxController with WidgetsBindingObserver, RouteAw
           isOnline.value = true;
           _startSendingLocation();
           EasyLoading.showSuccess(data['message']?.toString() ?? 'You are now online.');
+
+          final accountCtrl = Get.isRegistered<AccountController>()
+              ? Get.find<AccountController>()
+              : Get.put(AccountController());
+          if (!accountCtrl.isAutoPopupEnabled.value) {
+            accountCtrl.updateAutoPopupPermission(true);
+          }
         } else if (status == 'offline') {
           isOnline.value = false;
           _stopSendingLocation();
           orders.clear();
           EasyLoading.showSuccess(data['message']?.toString() ?? 'You are now offline.');
+
+          final accountCtrl = Get.isRegistered<AccountController>()
+              ? Get.find<AccountController>()
+              : Get.put(AccountController());
+          if (accountCtrl.isAutoPopupEnabled.value) {
+            accountCtrl.updateAutoPopupPermission(false);
+          }
 
           // If switch off on Home Screen, go to preference screen
           if (Get.currentRoute == AppRoutes.bottomNavbarScreen || Get.currentRoute == AppRoutes.homeScreen) {
