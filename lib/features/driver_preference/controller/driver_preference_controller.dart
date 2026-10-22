@@ -46,6 +46,10 @@ class DriverPreferenceController extends GetxController {
       _checkIfModified();
     });
 
+    if (!_homeController.isOnline.value && _accountController.isAutoPopupEnabled.value) {
+      _accountController.updateAutoPopupPermission(false);
+    }
+
     _initializeUserLocation();
   }
 
@@ -118,6 +122,12 @@ class DriverPreferenceController extends GetxController {
   }
 
   Future<void> toggleAutoPopup(bool value) async {
+    if (!isOnline.value) {
+      if (value) {
+        EasyLoading.showInfo('You have to go online to turn auto pop-up on.');
+      }
+      return;
+    }
     await _accountController.updateAutoPopupPermission(value);
   }
 

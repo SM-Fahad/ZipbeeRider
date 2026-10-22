@@ -49,7 +49,7 @@ class DriverPreferenceScreen extends StatelessWidget {
               () => Switch(
                 value: ctrl.isOnline.value,
                 onChanged: ctrl.toggleOffline,
-                activeThumbColor: Colors.amber,
+                activeThumbColor: AppColors.onboardingIndicatorActive,
               ),
             ),
           ],
@@ -63,7 +63,7 @@ class DriverPreferenceScreen extends StatelessWidget {
             left: 0,
             right: 0,
             child: Container(
-              height: 374,
+              height: 500,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -76,7 +76,7 @@ class DriverPreferenceScreen extends StatelessWidget {
 
           // ---- CONTENT AREA ----
           Positioned.fill(
-            top: 360,
+            top: 480,
             child: SingleChildScrollView(
               child: Padding(
                 padding: const EdgeInsets.symmetric(
@@ -86,136 +86,158 @@ class DriverPreferenceScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          "Preference",
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 20,
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    SizedBox(height: 5),
-                    Text(
-                      "Set your Auto popup and Distance Radius nearby order",
-                      style: TextStyle(fontSize: 13, color: Colors.grey),
-                    ),
-                    SizedBox(height: 20), 
-
-                    /// Feed Refresh Rate
                     Obx(
-                      () => Row(
-                        children: [
-                          Container(
-                            decoration: BoxDecoration(
-                              color: AppColors.onboardingIndicatorActive,
-                              shape: BoxShape.circle,
-                            ),
-                            padding: const EdgeInsets.all(6),
-                            child: const Icon(Icons.refresh),
-                          ),
-                          const SizedBox(width: 12),
-                          const Expanded(
-                            child: Text(
-                              "Feed Refresh Rate (sec)",
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                          SizedBox(
-                            width: 70,
-                            child: TextFormField(
-                              controller: ctrl.feedRefreshRateController,
-                              keyboardType: TextInputType.number,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              decoration: InputDecoration(
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 8,
-                                ),
-                                isDense: true,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              onFieldSubmitted: (_) => ctrl.saveFeedRefreshRate(),
-                            ),
-                          ),
-                          if (ctrl.isModified.value || ctrl.isFeedRefreshRateUpdating.value) ...[
-                            const SizedBox(width: 8),
-                            InkWell(
-                              onTap: ctrl.isFeedRefreshRateUpdating.value
-                                  ? null
-                                  : () => ctrl.saveFeedRefreshRate(),
-                              child: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: AppColors.onboardingIndicatorActive,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: ctrl.isFeedRefreshRateUpdating.value
-                                    ? const SizedBox(
-                                        width: 18,
-                                        height: 18,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: Colors.black,
-                                        ),
-                                      )
-                                    : const Icon(
-                                        Icons.check,
-                                        size: 18,
-                                        color: Colors.black,
+                      () => ctrl.isOnline.value
+                          ? Column(
+                              children: [
+                                const SizedBox(height: 20),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.route,
+                                      color:
+                                          AppColors.onboardingIndicatorActive,
+                                      size: 30,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    const Text(
+                                      "Searching for Bookings",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 20,
                                       ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 5),
+                              ],
+                            )
+                          : const SizedBox.shrink(),
                     ),
 
+                    // Text(
+                    //   "Set your Auto popup and Distance Radius nearby order",
+                    //   style: TextStyle(fontSize: 13, color: Colors.grey),
+                    // ),
+                    // SizedBox(height: 20),
+
+                    // /// Feed Refresh Rate
+                    // Obx(
+                    //   () => Row(
+                    //     children: [
+                    //       Container(
+                    //         decoration: BoxDecoration(
+                    //           color: AppColors.onboardingIndicatorActive,
+                    //           shape: BoxShape.circle,
+                    //         ),
+                    //         padding: const EdgeInsets.all(6),
+                    //         child: const Icon(Icons.refresh),
+                    //       ),
+                    //       const SizedBox(width: 12),
+                    //       const Expanded(
+                    //         child: Text(
+                    //           "Feed Refresh Rate (sec)",
+                    //           style: TextStyle(
+                    //             fontSize: 16,
+                    //             fontWeight: FontWeight.w600,
+                    //           ),
+                    //         ),
+                    //       ),
+                    //       SizedBox(
+                    //         width: 70,
+                    //         child: TextFormField(
+                    //           controller: ctrl.feedRefreshRateController,
+                    //           keyboardType: TextInputType.number,
+                    //           textAlign: TextAlign.center,
+                    //           style: const TextStyle(
+                    //             fontSize: 14,
+                    //             fontWeight: FontWeight.w600,
+                    //           ),
+                    //           decoration: InputDecoration(
+                    //             contentPadding: const EdgeInsets.symmetric(
+                    //               horizontal: 8,
+                    //               vertical: 8,
+                    //             ),
+                    //             isDense: true,
+                    //             border: OutlineInputBorder(
+                    //               borderRadius: BorderRadius.circular(8),
+                    //             ),
+                    //           ),
+                    //           onFieldSubmitted: (_) => ctrl.saveFeedRefreshRate(),
+                    //         ),
+                    //       ),
+                    //       if (ctrl.isModified.value || ctrl.isFeedRefreshRateUpdating.value) ...[
+                    //         const SizedBox(width: 8),
+                    //         InkWell(
+                    //           onTap: ctrl.isFeedRefreshRateUpdating.value
+                    //               ? null
+                    //               : () => ctrl.saveFeedRefreshRate(),
+                    //           child: Container(
+                    //             padding: const EdgeInsets.all(8),
+                    //             decoration: BoxDecoration(
+                    //               color: AppColors.onboardingIndicatorActive,
+                    //               borderRadius: BorderRadius.circular(8),
+                    //             ),
+                    //             child: ctrl.isFeedRefreshRateUpdating.value
+                    //                 ? const SizedBox(
+                    //                     width: 18,
+                    //                     height: 18,
+                    //                     child: CircularProgressIndicator(
+                    //                       strokeWidth: 2,
+                    //                       color: Colors.black,
+                    //                     ),
+                    //                   )
+                    //                 : const Icon(
+                    //                     Icons.check,
+                    //                     size: 18,
+                    //                     color: Colors.black,
+                    //                   ),
+                    //           ),
+                    //         ),
+                    //       ],
+                    //     ],
+                    //   ),
+                    // ),
                     const SizedBox(height: 20),
 
                     /// Auto Popup
                     Obx(
-                      () => Row(
-                        children: [
-                          Container(
-                            decoration: BoxDecoration(
-                              color: AppColors.onboardingIndicatorActive,
-                              shape: BoxShape.circle,
+                      () => InkWell(
+                        onTap: ctrl.isAutoPopupUpdating.value
+                            ? null
+                            : () => ctrl.toggleAutoPopup(
+                                !(ctrl.isOnline.value && ctrl.isAutoPopup.value),
+                              ),
+                        child: Row(
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                color: AppColors.onboardingIndicatorActive,
+                                shape: BoxShape.circle,
+                              ),
+                              padding: const EdgeInsets.all(6),
+                              child: const Icon(Icons.remove_red_eye),
                             ),
-                            padding: const EdgeInsets.all(6),
-                            child: const Icon(Icons.remove_red_eye),
-                          ),
-                          const SizedBox(width: 12),
-                          const Expanded(
-                            child: Text(
-                              "Auto Popup",
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
+                            const SizedBox(width: 12),
+                            const Expanded(
+                              child: Text(
+                                "Auto Popup",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
-                          ),
-                          Switch(
-                            value: ctrl.isAutoPopup.value,
-                            onChanged: ctrl.isAutoPopupUpdating.value
-                                ? null
-                                : ctrl.toggleAutoPopup,
-                          ),
-                        ],
+                            Switch(
+                              value:
+                                  ctrl.isOnline.value && ctrl.isAutoPopup.value,
+                              onChanged: ctrl.isAutoPopupUpdating.value
+                                  ? null
+                                  : ctrl.toggleAutoPopup,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
 
@@ -255,50 +277,49 @@ class DriverPreferenceScreen extends StatelessWidget {
                     const SizedBox(height: 20),
 
                     /// Order Feed Reset
-                    InkWell(
-                      onTap: () => ctrl.resetOrderFeed(),
-                      child: Row(
-                        children: [
-                          Container(
-                            decoration: const BoxDecoration(
-                              color: AppColors.onboardingIndicatorActive,
-                              shape: BoxShape.circle,
-                            ),
-                            padding: const EdgeInsets.all(6),
-                            child: const Icon(Icons.restart_alt),
-                          ),
-                          const SizedBox(width: 12),
-                          const Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "Order Feed Reset",
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                Text(
-                                  "Restore previously declined orders",
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const Icon(Icons.chevron_right),
-                        ],
-                      ),
-                    ),
+                    // InkWell(
+                    //   onTap: () => ctrl.resetOrderFeed(),
+                    //   child: Row(
+                    //     children: [
+                    //       Container(
+                    //         decoration: const BoxDecoration(
+                    //           color: AppColors.onboardingIndicatorActive,
+                    //           shape: BoxShape.circle,
+                    //         ),
+                    //         padding: const EdgeInsets.all(6),
+                    //         child: const Icon(Icons.restart_alt),
+                    //       ),
+                    //       const SizedBox(width: 12),
+                    //       const Expanded(
+                    //         child: Column(
+                    //           crossAxisAlignment: CrossAxisAlignment.start,
+                    //           children: [
+                    //             Text(
+                    //               "Order Feed Reset",
+                    //               style: TextStyle(
+                    //                 fontSize: 16,
+                    //                 fontWeight: FontWeight.w600,
+                    //               ),
+                    //             ),
+                    //             Text(
+                    //               "Restore previously declined orders",
+                    //               style: TextStyle(
+                    //                 fontSize: 12,
+                    //                 color: Colors.grey,
+                    //               ),
+                    //             ),
+                    //           ],
+                    //         ),
+                    //       ),
+                    //       const Icon(Icons.chevron_right),
+                    //     ],
+                    //   ),
+                    // ),
 
-                    const SizedBox(height: 20),
+                    // const SizedBox(height: 20),
 
                     /// Bottom Buttons --- Works in Release mode always!
                     TowButtonSection(ctrl: ctrl),
-
                     SizedBox(height: 30),
                   ],
                 ),
