@@ -5,8 +5,12 @@ import 'package:ZipBee_Driver/features/auto_popup/controller/auto_popup_controll
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-class AutoOrderPopupDialog extends GetView<AutoPopupController> {
+class AutoOrderPopupDialog extends StatelessWidget {
   const AutoOrderPopupDialog({super.key});
+
+  AutoPopupController get controller => Get.isRegistered<AutoPopupController>()
+      ? Get.find<AutoPopupController>()
+      : Get.put(AutoPopupController(), permanent: true);
 
   String _formatRaiderToPickupKm(double? value) {
     if (value == null) return '';
@@ -331,10 +335,14 @@ class AutoOrderPopupDialog extends GetView<AutoPopupController> {
   }
 }
 
-class _Header extends GetView<AutoPopupController> {
+class _Header extends StatelessWidget {
   const _Header({required this.onClose});
 
   final VoidCallback onClose;
+
+  AutoPopupController get controller => Get.isRegistered<AutoPopupController>()
+      ? Get.find<AutoPopupController>()
+      : Get.put(AutoPopupController(), permanent: true);
 
   @override
   Widget build(BuildContext context) {

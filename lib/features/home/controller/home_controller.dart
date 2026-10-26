@@ -110,7 +110,7 @@ class HomeController extends GetxController with WidgetsBindingObserver, RouteAw
     WidgetsBinding.instance.addObserver(this);
     _autoPopupController = Get.isRegistered<AutoPopupController>()
         ? Get.find<AutoPopupController>()
-        : Get.put(AutoPopupController());
+        : Get.put(AutoPopupController(), permanent: true);
     _initializeScrollController();
     _initializeUserLocation();
     connectSocketIfLoggedIn();
