@@ -39,6 +39,7 @@ ios/.symlinks/
 ios/Pods/
 ios/Flutter/Generated.xcconfig
 ios/Flutter/flutter_export_environment.sh
+temp_auto_push.bat
 ios/Flutter/Flutter.podspec
 ios/DerivedData/
 
@@ -59,7 +60,6 @@ xcuserdata/
 *.iws
 
 # Visual Studio Code
-.vscode/
 
 # macOS configuration file
 .DS_Store
@@ -80,4 +80,5 @@ xcuserdata/
 # Specific paths for generated outputs
 **/build/outputs/
 **/build/app/outputs/
-android/app/build/outputs/
+android/app/build/outputs/.gitignore
+branch_structure.json

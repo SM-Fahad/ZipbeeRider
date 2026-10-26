@@ -56,6 +56,10 @@ class AutoPopupController extends GetxController {
   }
 
   void _showPopup(AutoOrderPopupModel popup) {
+    if (!Get.isRegistered<AutoPopupController>()) {
+      Get.put<AutoPopupController>(this, permanent: true);
+    }
+
     if (_isPopupOpen) {
       _closeDialog();
     }

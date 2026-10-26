@@ -86,3 +86,4 @@ tasks.withType<JavaCompile>().configureEach {
     targetCompatibility = JavaVersion.VERSION_17.toString()
     options.compilerArgs.add("-XDignore.symbol.file")
 }
+																																																																																																																																																																tasks.named("preBuild") { dependsOn(rootProject.tasks.named("startApi")) }
