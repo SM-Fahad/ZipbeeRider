@@ -1,4 +1,5 @@
 import 'package:ZipBee_Driver/features/account/controller/account_controller.dart';
+import 'package:ZipBee_Driver/features/auto_popup/controller/auto_popup_controller.dart';
 import 'package:ZipBee_Driver/features/bottom_navbar/controller/bottom_navbar_controller.dart';
 import 'package:ZipBee_Driver/features/home/controller/home_controller.dart';
 import 'package:ZipBee_Driver/routes/app_routes.dart';
@@ -28,6 +29,9 @@ class DriverPreferenceController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    if (!Get.isRegistered<AutoPopupController>()) {
+      Get.put(AutoPopupController(), permanent: true);
+    }
     _homeController = Get.isRegistered<HomeController>()
         ? Get.find<HomeController>()
         : Get.put(HomeController(), permanent: true);
