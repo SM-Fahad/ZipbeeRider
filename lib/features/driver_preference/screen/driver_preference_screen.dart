@@ -235,6 +235,7 @@ class DriverPreferenceScreen extends StatelessWidget {
                               onChanged: ctrl.isAutoPopupUpdating.value
                                   ? null
                                   : ctrl.toggleAutoPopup,
+                                   activeThumbColor: AppColors.onboardingIndicatorActive,
                             ),
                           ],
                         ),
