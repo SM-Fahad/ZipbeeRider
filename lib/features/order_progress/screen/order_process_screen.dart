@@ -157,9 +157,7 @@ class OrderProcessScreen extends StatelessWidget {
                         const SizedBox(height: 18),
                         _buildCustomerSection(),
                         const SizedBox(height: 18),
-                        _buildOrderConfirmationSection(),
-                        const SizedBox(height: 18),
-                        _buildSummaryCard(order.id),
+                        // _buildOrderConfirmationSection(),
                         const SizedBox(height: 18),
                         _buildStopProgressSection(),
                         const SizedBox(height: 18),
@@ -167,10 +165,6 @@ class OrderProcessScreen extends StatelessWidget {
                         const SizedBox(height: 20),
                         _buildDeliveryNotesSection(),
                         const SizedBox(height: 20),
-                        if (controller.shouldShowPaymentSection) ...[
-                          _buildCodAmountSection(),
-                          const SizedBox(height: 20),
-                        ],
                         _buildProofPhotosSection(),
                         const SizedBox(height: 20),
                         if (controller.errorMessage.isNotEmpty) ...[
@@ -305,73 +299,73 @@ class OrderProcessScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildOrderConfirmationSection() {
-    return Obx(
-      () {
-        final order = controller.orderDetail.value;
-        final showConfirmation = order != null &&
-            (order.raiderConfirmation || order.isAutoConfirmation);
+  // Widget _buildOrderConfirmationSection() {
+  //   return Obx(
+  //     () {
+  //       final order = controller.orderDetail.value;
+  //       final showConfirmation = order != null &&
+  //           (order.raiderConfirmation || order.isAutoConfirmation);
 
-        return Row(
-          children: [
-            if (showConfirmation)
-              GestureDetector(
-                onTap: () {
-                  controller.checkCustomerConfirmation();
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: controller.orderConfirmationStatusColor,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    controller.orderConfirmationStatusText,
-                    style: getTextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            if (controller.canChangeRoute) const Spacer(),
-            if (controller.canChangeRoute)
-              GestureDetector(
-                onTap: controller.isReorderingRoute.value
-                    ? null
-                    : _showChangeRouteDialog,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.black87),
-                    borderRadius: BorderRadius.circular(8),
-                    color: Colors.white,
-                  ),
-                  child: controller.isReorderingRoute.value
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Text(
-                          'Change Route',
-                          style: getTextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black,
-                          ),
-                        ),
-                ),
-              ),
-          ],
-        );
-      },
-    );
-  }
+  //       return Row(
+  //         children: [
+  //           if (showConfirmation)
+  //             GestureDetector(
+  //               onTap: () {
+  //                 controller.checkCustomerConfirmation();
+  //               },
+  //               child: Container(
+  //                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+  //                 decoration: BoxDecoration(
+  //                   color: controller.orderConfirmationStatusColor,
+  //                   borderRadius: BorderRadius.circular(8),
+  //                 ),
+  //                 child: Text(
+  //                   controller.orderConfirmationStatusText,
+  //                   style: getTextStyle(
+  //                     fontSize: 13,
+  //                     fontWeight: FontWeight.w600,
+  //                     color: Colors.white,
+  //                   ),
+  //                 ),
+  //               ),
+  //             ),
+  //           if (controller.canChangeRoute) const Spacer(),
+  //           if (controller.canChangeRoute)
+  //             GestureDetector(
+  //               onTap: controller.isReorderingRoute.value
+  //                   ? null
+  //                   : _showChangeRouteDialog,
+  //               child: Container(
+  //                 padding: const EdgeInsets.symmetric(
+  //                   horizontal: 14,
+  //                   vertical: 8,
+  //                 ),
+  //                 decoration: BoxDecoration(
+  //                   border: Border.all(color: Colors.black87),
+  //                   borderRadius: BorderRadius.circular(8),
+  //                   color: Colors.white,
+  //                 ),
+  //                 child: controller.isReorderingRoute.value
+  //                     ? const SizedBox(
+  //                         width: 16,
+  //                         height: 16,
+  //                         child: CircularProgressIndicator(strokeWidth: 2),
+  //                       )
+  //                     : Text(
+  //                         'Change Route',
+  //                         style: getTextStyle(
+  //                           fontSize: 13,
+  //                           fontWeight: FontWeight.w600,
+  //                           color: Colors.black,
+  //                         ),
+  //                       ),
+  //               ),
+  //             ),
+  //         ],
+  //       );
+  //     },
+  //   );
+  // }
 
   Future<void> _showChangeRouteDialog() async {
     final order = controller.orderDetail.value;
@@ -640,7 +634,6 @@ class OrderProcessScreen extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final payment = stop.payment;
     final statusColor = controller.statusColor(stop);
     final statusBackgroundColor = controller.statusBackgroundColor(stop);
 
@@ -721,24 +714,6 @@ class OrderProcessScreen extends StatelessWidget {
             _buildInfoLine(
               controller.latestActionLabel!,
               controller.latestActionValue!,
-            ),
-          ],
-          if (payment != null) ...[
-            const SizedBox(height: 10),
-            const Divider(height: 1),
-            const SizedBox(height: 10),
-            _buildCompactRow(
-              'Pay Type',
-              payment.payType.replaceAll('_', ' '),
-              'Amount',
-              '\$${payment.amount}',
-            ),
-            const SizedBox(height: 10),
-            _buildCompactRow(
-              'Pay Status',
-              payment.status.replaceAll('_', ' '),
-              'Discount',
-              '\$${payment.discount}',
             ),
           ],
           const SizedBox(height: 12),
@@ -1131,6 +1106,7 @@ class OrderProcessScreen extends StatelessWidget {
       final shouldShowSection =
           controller.slideButtonText == 'Take Photo' ||
           controller.slideButtonText == 'Complete Stop' ||
+          controller.slideButtonText.startsWith('Proceed to Drop') ||
           controller.selectedImages.isNotEmpty;
 
       if (!shouldShowSection) {

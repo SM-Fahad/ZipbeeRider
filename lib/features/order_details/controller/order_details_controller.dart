@@ -465,7 +465,71 @@ class OrderDetailsController extends GetxController with WidgetsBindingObserver,
   }
 
   String formatDateTime(DateTime value) {
-    return DateFormat('dd MMM yyyy, hh:mm a').format(value.toLocal());
+    final local = value.toLocal();
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final targetDay = DateTime(local.year, local.month, local.day);
+    final diffDays = today.difference(targetDay).inDays;
+    final timeStr = DateFormat('h:mm a').format(local);
+
+    if (diffDays == 0) {
+      return 'Today, $timeStr';
+    } else if (diffDays == 1) {
+      return 'Yesterday, $timeStr';
+    } else if (diffDays == -1) {
+      return 'Tomorrow, $timeStr';
+    }
+    return '${DateFormat('dd MMM yyyy').format(local)}, $timeStr';
+  }
+
+  bool shouldShowCollectCashBadge(OrderStopModel stop) {
+    final order = orderDetail.value;
+    if (order == null) {
+      return false;
+    }
+
+    final orderPayType = order.payType.trim().toUpperCase();
+    final stopPayType = (stop.payment?.payType ?? '').trim().toUpperCase();
+    final stopPaymentStatus = (stop.payment?.status ?? '').trim().toUpperCase();
+    final stopAmt = double.tryParse(stop.payment?.amount ?? '0') ?? 0.0;
+
+    if (orderPayType == 'COD_SENDER' || stopPayType == 'COD_SENDER') {
+      return stop.isPickup;
+    }
+
+    final isCashOrder =
+        orderPayType == 'COD' ||
+        orderPayType == 'CASH' ||
+        stopPayType == 'COD' ||
+        stopPayType == 'CASH';
+    if (!isCashOrder) {
+      return false;
+    }
+
+    if (stopAmt > 0 && stopPaymentStatus == 'UNPAID') {
+      return true;
+    }
+
+    final stops = sortedStops(order);
+    final unpaidStopWithAmount = stops.firstWhereOrNull((s) {
+      final amt = double.tryParse(s.payment?.amount ?? '0') ?? 0.0;
+      final st = (s.payment?.status ?? '').trim().toUpperCase();
+      return amt > 0 && st == 'UNPAID';
+    });
+    if (unpaidStopWithAmount != null) {
+      return unpaidStopWithAmount.id == stop.id;
+    }
+
+    final stopWithAmount = stops.firstWhereOrNull((s) {
+      final amt = double.tryParse(s.payment?.amount ?? '0') ?? 0.0;
+      return amt > 0;
+    });
+    if (stopWithAmount != null) {
+      return stopWithAmount.id == stop.id;
+    }
+
+    final firstDrop = stops.firstWhereOrNull((s) => s.isDrop);
+    return firstDrop?.id == stop.id;
   }
 
   String formatPayType(String payType) {

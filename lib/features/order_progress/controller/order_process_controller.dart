@@ -14,6 +14,7 @@ import 'package:ZipBee_Driver/features/home/model/order_model.dart';
 import 'package:ZipBee_Driver/features/home/model/order_stop_model.dart';
 import 'package:ZipBee_Driver/features/order_progress/service/order_stop_progress_service.dart';
 import 'package:ZipBee_Driver/features/order_progress/screen/navigation_guideline_screen.dart';
+import 'package:ZipBee_Driver/features/order_progress/screen/order_payment_screen.dart';
 import 'package:ZipBee_Driver/features/scan_and_pay/screen/scan_and_pay_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:ZipBee_Driver/core/utils/custom_map_marker_helper.dart';
@@ -707,25 +708,31 @@ class OrderProcessController extends GetxController {
   }
 
   String get appBarTitle {
-    switch (slideButtonText) {
-      case 'Proceed To Pickup':
-        return 'Pickup at $estimatedPickupTimeText';
-      case 'Proceed To Drop':
-        return 'Delivery at $estimatedCurrentDeliveryTimeText';
-      case 'Arrived':
-        return selectedStop.value?.isPickup == true
-            ? 'Proceed To Pickup'
-            : 'Proceed To Drop';
-      case 'Take Photo':
-        return 'Arrived';
-      case 'Proceed To Load':
-      case 'Proceed To Unload':
-        return 'Take Photo';
-      case 'Complete Stop':
-        return 'Complete';
-      default:
-        return 'Order Process';
+    final btn = slideButtonText;
+    if (btn == 'Proceed To Pickup') {
+      return 'Pickup at $estimatedPickupTimeText';
     }
+    if (btn == 'Proceed To Drop') {
+      return 'Proceed To Drop';
+    }
+    if (btn == 'Arrived') {
+      return selectedStop.value?.isPickup == true
+          ? 'Proceed To Pickup'
+          : 'Arrived';
+    }
+    if (btn == 'Take Photo') {
+      return 'Arrived';
+    }
+    if (btn == 'Proceed To Load' || btn == 'Proceed To Unload') {
+      return 'Take Photo';
+    }
+    if (btn.startsWith('Proceed to Drop')) {
+      return btn;
+    }
+    if (btn == 'Complete Stop') {
+      return 'Complete';
+    }
+    return 'Order Process';
   }
 
   String get estimatedPickupTimeText {
@@ -843,6 +850,13 @@ class OrderProcessController extends GetxController {
     }
     if (stop.isDrop && !_readBool(data, ['is_unload'])) {
       return 'Proceed To Unload';
+    }
+    if (stop.isPickup) {
+      final nextDrop = pendingStops.firstWhereOrNull((s) => s.id != stop.id);
+      if (nextDrop != null) {
+        return 'Proceed to Drop ${nextDrop.sequence}';
+      }
+      return 'Proceed to Drop 2';
     }
     return 'Complete Stop';
   }
@@ -1034,7 +1048,7 @@ class OrderProcessController extends GetxController {
       return;
     }
 
-    if (action == 'Complete Stop') {
+    if (action == 'Complete Stop' || action.startsWith('Proceed to Drop')) {
       await completeCurrentStop();
       return;
     }
@@ -1168,9 +1182,25 @@ class OrderProcessController extends GetxController {
       isUpdatingStep.value = true;
       errorMessage.value = '';
 
+      int? estimatedMinutes;
+      final driverLoc = currentLocation.value;
+      if (driverLoc != null) {
+        final distanceMeters = Geolocator.distanceBetween(
+          driverLoc.latitude,
+          driverLoc.longitude,
+          stop.latitude,
+          stop.longitude,
+        );
+        final distanceKm = distanceMeters / 1000.0;
+        estimatedMinutes = ((distanceKm / 40.0) * 60.0).ceil().clamp(1, 999);
+      }
+
       final response = await orderStopProgressService.updateStopProgress(
         stopId: stop.id,
         step: step,
+        estimatedMinutes: estimatedMinutes,
+        driverLatitude: driverLoc?.latitude,
+        driverLongitude: driverLoc?.longitude,
       );
 
       final responseStop = response['data'] is Map<String, dynamic>
@@ -1304,18 +1334,46 @@ class OrderProcessController extends GetxController {
     }
   }
 
+  bool isStopCashResponsible(OrderStopModel stop) {
+    final order = orderDetail.value;
+    final orderPayType = (order?.payType ?? '').trim().toUpperCase();
+    final stopPayType = (stop.payment?.payType ?? '').trim().toUpperCase();
+    final stopPaymentStatus = (stop.payment?.status ?? '').trim().toUpperCase();
+    final stopAmt = double.tryParse(stop.payment?.amount ?? '0') ?? 0.0;
+
+    if (orderPayType == 'COD_SENDER' || stopPayType == 'COD_SENDER') {
+      return stop.isPickup;
+    }
+
+    final isCashOrder =
+        orderPayType == 'COD' ||
+        orderPayType == 'CASH' ||
+        stopPayType == 'COD' ||
+        stopPayType == 'CASH';
+    if (!isCashOrder) {
+      return false;
+    }
+
+    if (stopAmt > 0 && stopPaymentStatus == 'UNPAID') {
+      return true;
+    }
+
+    final unpaidStopWithAmount = sortedStops.firstWhereOrNull((s) {
+      final amt = double.tryParse(s.payment?.amount ?? '0') ?? 0.0;
+      final st = (s.payment?.status ?? '').trim().toUpperCase();
+      return amt > 0 && st == 'UNPAID';
+    });
+    if (unpaidStopWithAmount != null) {
+      return unpaidStopWithAmount.id == stop.id;
+    }
+
+    final firstDrop = sortedStops.firstWhereOrNull((s) => s.isDrop);
+    return firstDrop?.id == stop.id;
+  }
+
   Future<void> completeCurrentStop() async {
     final stop = selectedStop.value;
     if (stop == null) {
-      return;
-    }
-
-    final addFee = enteredAdditionalFee;
-    final addReason = additionalFeeReasonController.text.trim();
-    if (addFee > 0 && addReason.isEmpty) {
-      errorMessage.value =
-          'Please enter a reason for the additional fee (e.g. Condo parking, ERP toll)';
-      EasyLoading.showError(errorMessage.value);
       return;
     }
 
@@ -1325,6 +1383,83 @@ class OrderProcessController extends GetxController {
       return;
     }
 
+    final remainingOtherStops = pendingStops
+        .where((item) => item.id != stop.id)
+        .toList();
+    final isFinalStop = remainingOtherStops.isEmpty;
+    final requiresCashOnThisStop = isStopCashResponsible(stop);
+    final requiresCreditAtFinalStop = !isCodPayment && isFinalStop;
+
+    if (requiresCashOnThisStop || requiresCreditAtFinalStop) {
+      final fixedFare = baseDeliveryFee > 0
+          ? baseDeliveryFee
+          : (orderDetail.value?.totalCostDouble ?? 0.0);
+
+      await Get.to(
+        () => OrderPaymentScreen(
+          isCash: requiresCashOnThisStop,
+          fixedFare: fixedFare,
+          initialOthers: enteredAdditionalFee,
+          initialReason: additionalFeeReasonController.text.trim(),
+          onOpenScanAndPay: requiresCashOnThisStop
+              ? ({
+                  required double erpFee,
+                  required double othersFee,
+                  required String reason,
+                  required double totalAmount,
+                }) async {
+                  final combinedAddFee = (erpFee + othersFee).clamp(
+                    0.0,
+                    double.infinity,
+                  );
+                  additionalFeeController.text = combinedAddFee.toStringAsFixed(
+                    2,
+                  );
+                  additionalFeeReasonController.text = reason;
+                  _syncCollectedCashWithTotal();
+                  await onScanAndPayTapped();
+                }
+              : null,
+          onConfirmPayment: ({
+            required double erpFee,
+            required double othersFee,
+            required String reason,
+            required double totalAmount,
+          }) async {
+            final combinedAddFee = (erpFee + othersFee).clamp(
+              0.0,
+              double.infinity,
+            );
+            additionalFeeController.text = combinedAddFee.toStringAsFixed(2);
+            additionalFeeReasonController.text = reason;
+            cashCollectedController.text = totalAmount.toStringAsFixed(2);
+            return await _executeStopCompletion(
+              stop: stop,
+              addFee: combinedAddFee,
+              addReason: reason,
+              overrideCashCollected: requiresCashOnThisStop
+                  ? totalAmount
+                  : null,
+            );
+          },
+        ),
+      );
+      return;
+    }
+
+    await _executeStopCompletion(
+      stop: stop,
+      addFee: enteredAdditionalFee,
+      addReason: additionalFeeReasonController.text.trim(),
+    );
+  }
+
+  Future<bool> _executeStopCompletion({
+    required OrderStopModel stop,
+    required double addFee,
+    required String addReason,
+    double? overrideCashCollected,
+  }) async {
     try {
       isCompleting.value = true;
       errorMessage.value = '';
@@ -1334,19 +1469,19 @@ class OrderProcessController extends GetxController {
           await orderCompletionService.updateStopAdditionalFee(
             stopId: stop.id,
             additionalFee: addFee,
-            reason: addReason,
+            reason: addReason.isNotEmpty ? addReason : 'Additional fee',
           );
         } catch (feeError) {
           debugPrint('Note: updateStopAdditionalFee staging warning: $feeError');
         }
       }
 
-      final enteredCash = double.tryParse(cashCollectedController.text.trim());
+      final enteredCash =
+          overrideCashCollected ??
+          double.tryParse(cashCollectedController.text.trim());
       final double? codCollected;
-      if (isCodPayment && (isCurrentStopUnpaid || totalAmountToCollect > 0)) {
-        codCollected = enteredCash ?? totalAmountToCollect;
-      } else if (enteredCash != null && enteredCash > 0) {
-        codCollected = enteredCash;
+      if (isStopCashResponsible(stop)) {
+        codCollected = enteredCash ?? (baseDeliveryFee + addFee);
       } else {
         codCollected = null;
       }
@@ -1359,7 +1494,9 @@ class OrderProcessController extends GetxController {
             : notesController.text.trim(),
         codCollected: codCollected,
         additionalFee: addFee > 0 ? addFee : null,
-        additionalFeeReason: addFee > 0 && addReason.isNotEmpty ? addReason : null,
+        additionalFeeReason: addFee > 0
+            ? (addReason.isNotEmpty ? addReason : 'Additional fee')
+            : null,
       );
 
       final completedStop = _mergeStopPayload(selectedStopData.value, {
@@ -1385,19 +1522,25 @@ class OrderProcessController extends GetxController {
           () => DeliverySuccessScreen(),
           arguments: {'userName': customerName},
         );
-        return;
+        return true;
       }
 
-      final nextStop = pendingStops.firstWhereOrNull(
-        (item) => item.id != stop.id,
-      );
-      if (nextStop != null) {
-        _loadSelectedStop(nextStop, clearForms: true);
-        EasyLoading.showSuccess('Stop completed. Loading next stop...');
+      EasyLoading.showSuccess('Pickup completed');
+      if (Navigator.canPop(Get.context!)) {
+        Get.back(result: 'stop_completed');
+      } else {
+        final nextStop = pendingStops.firstWhereOrNull(
+          (item) => item.id != stop.id,
+        );
+        if (nextStop != null) {
+          _loadSelectedStop(nextStop, clearForms: true);
+        }
       }
+      return true;
     } catch (e) {
       errorMessage.value = _cleanError(e);
       EasyLoading.showError(errorMessage.value);
+      return false;
     } finally {
       isCompleting.value = false;
     }

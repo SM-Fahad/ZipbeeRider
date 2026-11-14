@@ -19,14 +19,23 @@ class OrderStopProgressService {
   Future<Map<String, dynamic>> updateStopProgress({
     required int stopId,
     required String step,
+    int? estimatedMinutes,
+    double? driverLatitude,
+    double? driverLongitude,
   }) async {
     try {
       final token = await _getToken();
 
       final url = Uri.parse('$baseUrl/order/stops/$stopId/progress');
-      final payload = {'step': step};
+      final payload = <String, dynamic>{
+        'step': step,
+        if (estimatedMinutes != null && estimatedMinutes > 0)
+          'estimatedMinutes': estimatedMinutes,
+        if (driverLatitude != null) 'latitude': driverLatitude,
+        if (driverLongitude != null) 'longitude': driverLongitude,
+      };
 
-      final response = await http
+      var response = await http
           .patch(
             url,
             headers: {
@@ -40,6 +49,23 @@ class OrderStopProgressService {
             const Duration(seconds: 30),
             onTimeout: () => throw Exception('Request timeout'),
           );
+
+      if (response.statusCode == 400 && payload.length > 1) {
+        response = await http
+            .patch(
+              url,
+              headers: {
+                'accept': '*/*',
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer $token',
+              },
+              body: jsonEncode({'step': step}),
+            )
+            .timeout(
+              const Duration(seconds: 30),
+              onTimeout: () => throw Exception('Request timeout'),
+            );
+      }
 
       debugPrint('Stop progress response status: ${response.statusCode}');
       debugPrint('Stop progress response body: ${response.body}');

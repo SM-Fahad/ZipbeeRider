@@ -86,10 +86,25 @@ class NotificationsController extends GetxController {
             .where((item) => item.isActive)
             .toList();
 
+        final seenKeys = <String>{};
+        for (final existing in notificationList) {
+          seenKeys.add(
+            '${existing.title}|${existing.subTitle}|${existing.orderId ?? ''}|${existing.type}',
+          );
+        }
+        final uniqueItems = <NotificationModel>[];
+        for (final item in items) {
+          final key =
+              '${item.title}|${item.subTitle}|${item.orderId ?? ''}|${item.type}';
+          if (seenKeys.add(key)) {
+            uniqueItems.add(item);
+          }
+        }
+
         final int total = decoded['data']?['total'] ?? 0;
         hasMore = page.value * limit < total;
 
-        notificationList.addAll(items);
+        notificationList.addAll(uniqueItems);
       } else {
         if (loadMore) page.value--;
         debugPrint("fetchNotifications FAILED: ${response.statusCode} - ${response.body}");

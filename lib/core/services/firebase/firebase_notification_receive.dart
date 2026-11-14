@@ -18,6 +18,7 @@ class FirebaseNotificationReceive {
 
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
       FlutterLocalNotificationsPlugin();
+  static final Set<String> _shownNotificationKeys = <String>{};
 
   static Future<void> initializeLocalNotifications() async {
     const AndroidInitializationSettings androidSettings =
@@ -103,7 +104,7 @@ class FirebaseNotificationReceive {
       macOS: darwinDetails,
     );
 
-    // Format any unrounded decimals in the body before presenting
+    String title = message.notification?.title ?? 'Notification';
     String body = message.notification?.body ?? 'You have a new message';
     body = body.replaceAllMapped(
       RegExp(r'(\d+\.\d{3,})'),
@@ -113,9 +114,16 @@ class FirebaseNotificationReceive {
       },
     );
 
+    final dedupeKey =
+        '${message.messageId ?? ''}|$title|$body|${message.data['orderId'] ?? ''}|${message.data['type'] ?? ''}';
+    if (_shownNotificationKeys.contains(dedupeKey)) {
+      return;
+    }
+    _shownNotificationKeys.add(dedupeKey);
+
     await _notificationsPlugin.show(
       message.hashCode,
-      message.notification?.title ?? 'Notification',
+      title,
       body,
       details,
       payload: jsonEncode(message.data),

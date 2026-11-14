@@ -356,11 +356,40 @@ class OrderDetailsScreen extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 6),
-          _buildInfoLine(
-            'Note to Driver',
-            (stop.destinationNoteToDriver?.trim().isNotEmpty ?? false)
-                ? stop.destinationNoteToDriver!.trim()
-                : 'N/A',
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: _buildInfoLine(
+                  'Note to Driver',
+                  (stop.destinationNoteToDriver?.trim().isNotEmpty ?? false)
+                      ? stop.destinationNoteToDriver!.trim()
+                      : 'N/A',
+                ),
+              ),
+              if (ctrl.shouldShowCollectCashBadge(stop)) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE5E7EB),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.shade400),
+                  ),
+                  child: Text(
+                    'Collect Cash',
+                    style: getTextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black,
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
           if (payment != null) ...[
             const SizedBox(height: 10),

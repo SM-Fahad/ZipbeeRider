@@ -33,3 +33,5 @@ analyzer:
     - "build/**"
     - ".dart_tool/**"
     - "**/firebase_storage/**"  
+    - android/**
+    - ios/**

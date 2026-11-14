@@ -24,11 +24,7 @@ class ScanAndPayScreen extends StatelessWidget {
             children: [
               const SizedBox(height: 16),
               _amountBox(),
-              const SizedBox(height: 18),
-              // _durationBox(size),
-              // const SizedBox(height: 28),
-              _qrSection(size),
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
               _twoButtons(context, size),
               const SizedBox(height: 32),
             ],
